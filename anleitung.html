@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anleitung – Monatsfinanzen</title>
+<meta name="description" content="Kurzanleitung zur App Monatsfinanzen: öffnen, erfassen, auswerten, sichern.">
+<meta name="theme-color" content="#f4f6fb">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4f6fb; --ink:#0f172a;
+  --slate100:#f1f5f9; --slate200:#e2e8f0; --slate400:#94a3b8; --slate500:#64748b;
+  --fixed500:#4f46e5; --fixed700:#3730a3;
+  --vary700:#c2410c; --em600:#059669; --amber:#d97706; --red:#dc2626;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+     font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+     line-height:1.6}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;margin:0}
+a{color:var(--fixed700)}
+
+.wrap{max-width:760px;margin:0 auto;padding:24px 16px 56px}
+@media(min-width:640px){.wrap{padding:40px 16px 64px}}
+
+.back{display:inline-block;font-size:14px;font-weight:600;text-decoration:none;
+      color:var(--slate500);margin-bottom:18px}
+.back:hover{color:var(--ink)}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.2em;color:var(--slate400);
+         font-weight:500;margin:0}
+.title{font-size:28px;font-weight:700;letter-spacing:-.01em;margin-top:2px}
+@media(min-width:640px){.title{font-size:32px}}
+.lead{color:var(--slate500);margin:10px 0 0}
+
+section{margin-top:32px}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dot{width:9px;height:9px;border-radius:999px;flex:none}
+.d1{background:var(--em600)} .d2{background:var(--fixed500)} .d3{background:#f97316}
+.d4{background:#0ea5e9} .d5{background:var(--amber)}
+h2{font-size:19px;font-weight:600}
+.panel{background:#fff;border-radius:16px;padding:18px 20px;
+       box-shadow:0 1px 2px rgba(0,0,0,.05),0 0 0 1px var(--slate100)}
+.panel > *:first-child{margin-top:0}
+.panel > *:last-child{margin-bottom:0}
+p{margin:12px 0}
+h3{font-size:15px;font-weight:600;margin:20px 0 4px}
+ol,ul{margin:12px 0;padding-left:22px}
+li{margin:6px 0}
+li::marker{color:var(--slate400)}
+b,strong{font-weight:600}
+kbd{font-family:inherit;font-size:13px;font-weight:600;background:var(--slate100);
+    border-radius:6px;padding:2px 7px;box-shadow:0 0 0 1px var(--slate200);white-space:nowrap}
+.hint{border-left:3px solid var(--slate200);padding-left:14px;color:var(--slate500);font-size:14px}
+.warn{border-left-color:var(--red);color:var(--ink)}
+.warn b{color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--slate100);vertical-align:top}
+th{font-weight:600;color:var(--slate500);font-size:13px}
+tr:last-child td{border-bottom:none}
+td:first-child{white-space:nowrap;font-weight:600}
+.foot{margin-top:40px;text-align:center;font-size:12px;color:var(--slate400)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a class="back" href="./">‹ Zur App</a>
+
+  <header>
+    <p class="eyebrow">Kurzanleitung</p>
+    <h1 class="title">Monatsfinanzen</h1>
+    <p class="lead">Was die App kann und in welcher Reihenfolge man sie bedient.</p>
+  </header>
+
+  <section>
+    <div class="section-head"><span class="dot d1"></span><h2>App öffnen</h2></div>
+    <div class="panel">
+      <p><b>iPhone:</b> In Safari <a href="./">die App</a> aufrufen, unten auf <kbd>Teilen</kbd>
+         → <kbd>Zum Home-Bildschirm</kbd>. Danach genügt das Symbol auf dem Home-Bildschirm;
+         die App startet im Vollbild ohne Adressleiste.</p>
+      <p><b>Rechner:</b> Die Adresse aufrufen und als Lesezeichen ablegen.</p>
+      <p class="hint">iOS führt für die vom Home-Bildschirm gestartete App einen eigenen
+         Speicher, getrennt von Safari. Am besten immer über dasselbe Symbol arbeiten,
+         sonst liegen die Zahlen an zwei Stellen.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="dot d2"></span><h2>Einmal einrichten</h2></div>
+    <div class="panel">
+      <p>Im Reiter <b>Übersicht</b>, Abschnitt „Einnahmen &amp; Fixkosten":</p>
+      <ol>
+        <li><b>Monatliches Einkommen</b> eintragen.</li>
+        <li><b>Fixkosten</b> anlegen: Bezeichnung, Betrag, dann <kbd>+</kbd>.
+            Miete, Strom, Versicherungen, Abos – alles, was jeden Monat gleich abgeht.</li>
+      </ol>
+      <p>Beträge lassen sich später direkt in der Zeile überschreiben, <kbd>✕</kbd> löscht eine
+         Zeile. Das war die einmalige Arbeit: <b>Ein neuer Monat übernimmt Einkommen und
+         Fixkosten automatisch</b>, die Ausgaben starten leer.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="dot d3"></span><h2>Laufend erfassen</h2></div>
+    <div class="panel">
+      <p>Abschnitt „Variable Kosten &amp; Ausgabebuch":</p>
+      <h3>Ausgabe von Hand buchen</h3>
+      <p>Datum (steht auf heute), <b>Betrag</b>, <b>Kategorie</b>, Verwendungszweck optional
+         → <kbd>Ausgabe buchen</kbd>.</p>
+      <h3>Ausgabe per Beleg buchen</h3>
+      <p><kbd>📷 Beleg scannen</kbd> antippen, den Kassenbon fotografieren oder eine PDF wählen.
+         Die Texterkennung schlägt Betrag und Datum vor – <b>bitte nachsehen, ob es stimmt</b> –,
+         dann buchen. Der Beleg hängt danach an der Ausgabe; ein Tippen zeigt ihn groß.</p>
+      <h3>Ändern und löschen</h3>
+      <p>In der Liste ändert <kbd>✎</kbd> eine Buchung, <kbd>✕</kbd> löscht sie.</p>
+      <h3>Tagesbudget (freiwillig)</h3>
+      <p>Schalter „Tagespauschal-Budget anzeigen": Du gibst einen Tagessatz an, die App rechnet
+         ihn auf den Monat hoch und sagt, wie viel noch übrig oder wie viel überzogen ist.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="dot d4"></span><h2>Was die Anzeige sagt</h2></div>
+    <div class="panel">
+      <p>Die farbige Karte ganz oben zeigt laufend den <b>Puffer</b>:
+         Einnahmen − Fixkosten − Ausgaben.</p>
+      <table>
+        <tr><th>Farbe</th><th>Bedeutung</th></tr>
+        <tr><td>Grün</td><td>Es ist Luft bis zum Monatsende</td></tr>
+        <tr><td>Gelb</td><td>Weniger als 10 % der Einnahmen übrig</td></tr>
+        <tr><td>Rot</td><td>Fehlbetrag – die Ausgaben übersteigen die Einnahmen</td></tr>
+      </table>
+      <p>Mit <kbd>‹</kbd> und <kbd>›</kbd> oben blätterst du durch die Monate; das Feld dazwischen
+         springt direkt zu einem bestimmten. Alles, was du einträgst, gehört zum
+         <b>angezeigten</b> Monat – beim Nachtragen also erst den richtigen Monat wählen.</p>
+      <p>Im Reiter <b>Auswertung</b> wird nichts eingetragen, dort steht nur, was sich aus den
+         Zahlen ergibt: verfügbares Budget, Ausgaben nach Kategorie als Ring, Durchschnitt je
+         Monat und Tag, Veränderung zum Vormonat, Verlauf über bis zu zwölf Monate und die
+         Jahresauswertung mit teuerstem und günstigstem Monat.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="dot d5"></span><h2>Sichern und übertragen</h2></div>
+    <div class="panel">
+      <p>Alle Zahlen liegen ausschließlich im Speicher dieses Browsers. Nichts wird übertragen –
+         und niemand außer dir kommt daran. Die Kehrseite: Ein geleerter Browserspeicher nimmt
+         die Erfassung mit.</p>
+      <h3>Backup</h3>
+      <p>Reiter <b>Auswertung</b> → „Daten &amp; Backup" → <kbd>Backup exportieren</kbd> legt alle
+         Monate als Datei ab (auf dem iPhone in „Dateien", von dort in iCloud oder per Mail
+         sichern). <kbd>Backup importieren</kbd> liest sie wieder ein.</p>
+      <h3>Zwischen Handy und Rechner</h3>
+      <p>Beide führen getrennte Stände. Der Weg hinüber: exportieren, Datei übertragen, dort
+         importieren.</p>
+      <h3>PDF-Bericht</h3>
+      <p><kbd>Bericht als PDF</kbd> oben rechts ist zum Anschauen, Ausdrucken und Weitergeben.
+         Zurücklesen lässt sich daraus nichts – dafür ist das Backup da.</p>
+      <p class="hint warn"><b>Vorsicht bei „Monat zurücksetzen"</b> direkt darunter: Das leert den
+         angezeigten Monat auf die Ausgangswerte, die gebuchten Ausgaben sind weg. Es fragt
+         vorher nach, steht aber dicht neben dem PDF-Knopf.</p>
+    </div>
+  </section>
+
+  <p class="foot"><a class="back" href="./" style="margin:0">‹ Zur App</a></p>
+
+</div>
+</body>
+</html>

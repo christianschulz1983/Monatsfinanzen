@@ -30,6 +30,10 @@ Im Browser: https://christianschulz1983.github.io/Monatsfinanzen/
 
 Ohne Internet genügt die Datei `index.html` – Doppelklick, fertig.
 
+Wie man sie bedient, steht in der Kurzanleitung:
+https://christianschulz1983.github.io/Monatsfinanzen/anleitung.html
+(`anleitung.html`, in der App unten verlinkt).
+
 ### Auf dem iPhone als App
 
 In **Safari** die Adresse öffnen, unten auf **Teilen** → **Zum Home-Bildschirm**.
