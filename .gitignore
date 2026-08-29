@@ -1,0 +1,11 @@
+# Betriebssystem-Reste
+.DS_Store
+Thumbs.db
+
+# Editoren
+.vscode/
+.idea/
+
+# Lokale Sicherungen und Exporte
+Backups/
+*.pdf
