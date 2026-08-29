@@ -103,6 +103,35 @@ td:first-child{white-space:nowrap;font-weight:600}
          Zeile. Das war die einmalige Arbeit: <b>Ein neuer Monat übernimmt Einkommen und
          Fixkosten automatisch</b>, die Ausgaben starten leer.</p>
 
+      <h3>Zahlungen, die nicht jeden Monat kommen</h3>
+      <p>Der Pfeil <kbd>⌄</kbd> am Ende einer Fixkostenzeile öffnet die Einstellungen dazu:
+         <b>Fällig am</b> (das Datum der Zahlung) und <b>Rhythmus</b> (monatlich, vierteljährlich,
+         halbjährlich, jährlich). Darunter stehen zwei Kästchen, die entscheiden, wie der Posten
+         in die Rechnung eingeht:</p>
+      <table>
+        <tr><th>Angehakt</th><th>Wirkung</th></tr>
+        <tr><td>Nur Durchschnitt</td>
+            <td>Der Betrag wird auf die Monate verteilt. 260 € jährlich belasten jeden Monat mit
+                21,67 € – der Puffer bleibt über das Jahr gleichmäßig.</td></tr>
+        <tr><td>Nur Fälligkeit</td>
+            <td>Der volle Betrag belastet allein den Fälligkeitsmonat. Im Juni gehen 260 € ab,
+                die anderen elf Monate bleiben frei – dort steht entsprechend mehr zur Verfügung.</td></tr>
+        <tr><td>Beide</td>
+            <td>Der Puffer rechnet mit dem Anteil, und im Fälligkeitsmonat steht zusätzlich unter
+                der Summe, welcher Betrag tatsächlich abgeht. <b>Kein zweiter Abzug</b> – nur die
+                Erinnerung, dass diesen Monat wirklich Geld fließt.</td></tr>
+        <tr><td>Keines</td>
+            <td>Der Posten zählt nirgends mit, bleibt aber gespeichert. Praktisch für einen
+                pausierten Vertrag; die Zeile ist blass und mit „zählt nicht" gekennzeichnet.</td></tr>
+      </table>
+      <p>Rechts neben dem Namen steht danach kurz, was gilt – etwa
+         <b>jährl. · Anteil 21,67 € · fällig</b> oder <b>viertelj. · nur Februar</b>.
+         Alle Anzeigen rechnen damit: Puffer, Summe Fixkosten, verfügbares Budget, Verlauf
+         und PDF-Bericht.</p>
+      <p class="hint">Ohne Fälligkeitsdatum kann die App den Monat nicht bestimmen – bei einem
+         anderen Rhythmus als monatlich also immer ein Datum setzen. Der Tag im Monat spielt
+         für die Rechnung keine Rolle, nur der Monat.</p>
+
       <h3>Fixkosten einlesen statt tippen</h3>
       <p><kbd>📄 Fixkosten einlesen (Foto / PDF)</kbd> nimmt einen Kontoauszug, ein Schreiben
          über eine Beitragserhöhung oder eine eigene Aufstellung – als PDF oder als Foto.

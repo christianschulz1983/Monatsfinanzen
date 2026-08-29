@@ -8,6 +8,9 @@ Kein Server, kein Konto, keine Installation.
 
 **Übersicht**
 - Monatliches Einkommen und Fixkosten selbst anlegen, Summe wird laufend gerechnet
+- Fälligkeitsdatum und Rhythmus je Fixposten (monatlich bis jährlich); wahlweise auf die
+  Monate verteilt, nur im Fälligkeitsmonat gebucht, beides zugleich (Anteil im Puffer,
+  Hinweis im Fälligkeitsmonat) oder vorübergehend gar nicht gerechnet
 - Fixkosten aus Kontoauszug, Schreiben oder Aufstellung einlesen (PDF oder Foto):
   erkannte Posten erscheinen als Vorschlagsliste, übernommen wird nur das Angehakte;
   ein bereits bekannter Posten bekommt den neuen Betrag statt eines zweiten Eintrags

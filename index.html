@@ -127,6 +127,26 @@ input[type=number]{-moz-appearance:textfield}
 .famt{display:flex;align-items:center;gap:4px}
 .fval{width:96px;text-align:right}
 .famt .cur{color:var(--slate400);font-size:14px}
+.frow--aus{opacity:.55}
+.fnamewrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.fnamewrap .fname{width:100%}
+.fmarke{max-width:100%;overflow:hidden;text-overflow:ellipsis;margin-left:8px;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.fmarke.verteilt{background:var(--fixed50);color:var(--fixed700)}
+.fmarke.faellig{background:var(--vary50);color:var(--vary700)}
+.fmarke.aus{background:var(--slate100);color:var(--slate500)}
+.fmore{flex-shrink:0;background:none;border:none;color:var(--slate400);width:26px;height:26px;display:grid;place-items:center;border-radius:6px;font-size:15px;transition:color .15s,transform .15s}
+.fmore:hover{color:var(--ink)}
+.fmore.offen{transform:rotate(180deg);color:var(--fixed600)}
+.fdetail{padding:12px 16px 14px;background:rgba(238,242,255,.4);border-top:1px solid var(--fixed100)}
+@media(min-width:640px){.fdetail{padding:12px 20px 14px}}
+.fdline{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.fdlab{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--slate500);flex:1 1 150px}
+.fdinput{font-size:14px;width:100%}
+.fdcheck{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;padding:3px 0}
+.fdcheck input{width:16px;height:16px;accent-color:var(--fixed600);flex:none}
+.fdcheck span{font-size:14px}
+.fdhint{font-size:13px;color:var(--slate500);margin:8px 0 0;line-height:1.5}
+.fixnote{font-size:12px;color:var(--slate500);margin:0;padding:0 16px 12px;background:var(--fixed50);line-height:1.5}
 .del{flex-shrink:0;background:none;border:none;color:#cbd5e1;width:28px;height:28px;display:grid;place-items:center;border-radius:6px;transition:color .15s}
 .del:hover{color:var(--red)}
 
@@ -368,6 +388,7 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           </div>
         </div>
         <div class="total"><span class="total-label">Summe Fixkosten</span><span class="total-val num" id="fixedTotal">–</span></div>
+        <p class="fixnote" id="fixNote" style="display:none"></p>
       </div>
     </section>
 
@@ -569,7 +590,7 @@ let evalYear = +data.currentMonth.slice(0, 4);
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) { const d = JSON.parse(raw); if (d && d.months) return d; }
+    if (raw) { const d = JSON.parse(raw); if (d && d.months) return normalisiereMonate(d); }
   } catch (e) {}
   const currentMonth = monthKey(new Date());
   const months = {};
@@ -579,7 +600,7 @@ function load() {
       const s = JSON.parse(v1);
       months[currentMonth] = {
         income: s.income != null ? s.income : DEFAULT_INCOME,
-        fixed: (s.fixed || []).map(f => ({ id: f.id || uid(), name: f.name, amount: f.amount })),
+        fixed: (s.fixed || []).map(normFixed),
         variable: (s.variable || []).map(e => ({ id: e.id || uid(), date: e.date, amount: e.amount, description: e.description, category: e.category || "Sonstiges" })),
         budgetEnabled: !!s.budgetEnabled,
         dailyBudget: s.dailyBudget || 0,
@@ -591,7 +612,7 @@ function load() {
 }
 
 function freshMonth() {
-  return { income: DEFAULT_INCOME, fixed: DEFAULT_FIXED.map(f => ({ id: uid(), name: f.name, amount: f.amount })), variable: [], budgetEnabled: false, dailyBudget: 0 };
+  return { income: DEFAULT_INCOME, fixed: DEFAULT_FIXED.map(normFixed), variable: [], budgetEnabled: false, dailyBudget: 0 };
 }
 
 function ensureMonth(key) {
@@ -599,7 +620,7 @@ function ensureMonth(key) {
   const prior = Object.keys(data.months).filter(k => k < key).sort();
   const src = prior.length ? data.months[prior[prior.length - 1]] : null;
   data.months[key] = src
-    ? { income: src.income, fixed: src.fixed.map(f => ({ id: uid(), name: f.name, amount: f.amount })), variable: [], budgetEnabled: src.budgetEnabled, dailyBudget: src.dailyBudget }
+    ? { income: src.income, fixed: src.fixed.map(f => normFixed(Object.assign({}, f, { id: uid() }))), variable: [], budgetEnabled: src.budgetEnabled, dailyBudget: src.dailyBudget }
     : freshMonth();
   save();
   return data.months[key];
@@ -608,7 +629,60 @@ function ensureMonth(key) {
 function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); return true; } catch (e) { return false; } }
 function cur() { return data.months[data.currentMonth]; }
 
-function fixedTotal(m) { return m.fixed.reduce((s, f) => s + (Number(f.amount) || 0), 0); }
+// Rhythmus eines Fixpostens: n = Monate zwischen zwei Zahlungen
+const RHYTHMEN = {
+  monat:   { n: 1,  kurz: "monatl.",    lang: "monatlich" },
+  quartal: { n: 3,  kurz: "viertelj.",  lang: "vierteljährlich" },
+  halb:    { n: 6,  kurz: "halbj.",     lang: "halbjährlich" },
+  jahr:    { n: 12, kurz: "jährl.",     lang: "jährlich" },
+};
+function rhythmus(f) { return RHYTHMEN[f && f.rhythm] || RHYTHMEN.monat; }
+
+// Fixposten auf die vollstaendige Form bringen (aeltere Staende kennen die Felder nicht)
+function normFixed(f) {
+  return {
+    id: (f && f.id) || uid(),
+    name: (f && f.name) || "",
+    amount: Number(f && f.amount) || 0,
+    due: (f && f.due) || "",
+    rhythm: RHYTHMEN[f && f.rhythm] ? f.rhythm : "monat",
+    avg: f && f.avg !== undefined ? !!f.avg : true,   // Altbestand: zaehlte immer voll mit
+    only: !!(f && f.only),
+  };
+}
+function normalisiereMonate(d) {
+  if (!d || !d.months) return d;
+  Object.keys(d.months).forEach(k => {
+    const m = d.months[k];
+    if (m && Array.isArray(m.fixed)) m.fixed = m.fixed.map(normFixed);
+  });
+  return d;
+}
+
+function monatsSchluessel(m) {
+  for (const k in data.months) if (data.months[k] === m) return k;
+  return data.currentMonth;
+}
+function monateDiff(a, b) {                       // a, b als "JJJJ-MM"
+  const [ay, am] = a.split("-").map(Number), [by, bm] = b.split("-").map(Number);
+  return (by - ay) * 12 + (bm - am);
+}
+function istFaellig(f, key) {                     // faellt die Zahlung in diesem Monat an?
+  const n = rhythmus(f).n;
+  if (n === 1 || !f.due) return true;
+  const d = monateDiff(f.due.slice(0, 7), key);
+  return ((d % n) + n) % n === 0;
+}
+function monatsAnteil(f, key) {                   // was diesen Monat den Puffer belastet
+  const betrag = Number(f.amount) || 0;
+  if (f.avg) return betrag / rhythmus(f).n;       // gleichmaessig verteilt
+  if (f.only) return istFaellig(f, key) ? betrag : 0;
+  return 0;                                        // kein Haken: Posten zaehlt nicht
+}
+function fixedTotal(m) {
+  const key = monatsSchluessel(m);
+  return m.fixed.reduce((s, f) => s + monatsAnteil(f, key), 0);
+}
 function variableTotal(m) { return m.variable.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
 function buffer(m) { return (Number(m.income) || 0) - fixedTotal(m) - variableTotal(m); }
 function daysInMonth(key) { const [y, m] = key.split("-").map(Number); return new Date(y, m, 0).getDate(); }
@@ -661,20 +735,78 @@ function renderHero(inc, spent, buf) {
   hero.className = "hero " + variant;
 }
 
+let offeneFix = new Set();                       // welche Zeilen ihre Einstellungen zeigen
+
+function monatNameVon(iso) {
+  if (!iso) return "";
+  const [y, mo] = iso.split("-").map(Number);
+  return new Intl.DateTimeFormat("de-DE", { month: "long" }).format(new Date(y, mo - 1, 1));
+}
+
+// Kurzkennzeichnung neben dem Betrag
+function fixMarke(f, key) {
+  if (!f.avg && !f.only) return { text: "zählt nicht", art: "aus" };
+  const r = rhythmus(f);
+  if (r.n === 1) return null;                    // monatlich braucht keine Kennzeichnung
+  const teile = [r.kurz];
+  if (f.avg) teile.push("Anteil " + fmt((Number(f.amount) || 0) / r.n));
+  else if (f.due) teile.push("nur " + monatNameVon(f.due));
+  const faellig = istFaellig(f, key);
+  if (f.avg && f.only && faellig) teile.push("fällig");
+  return { text: teile.join(" · "), art: faellig && f.only ? "faellig" : "verteilt" };
+}
+
+// Satz, der die gesetzte Kombination in Worten erklaert
+function fixModusText(f) {
+  const r = rhythmus(f), betrag = Number(f.amount) || 0;
+  if (!f.avg && !f.only) return "Kein Haken: Der Posten wird zurzeit nirgends mitgerechnet.";
+  if (r.n === 1) return "Monatlich: " + fmt(betrag) + " in jedem Monat.";
+  if (!f.due) return "Ohne Fälligkeitsdatum lässt sich der Monat nicht bestimmen – bitte oben ein Datum setzen.";
+  const monat = monatNameVon(f.due);
+  if (f.avg && f.only) return "Der Puffer rechnet mit " + fmt(betrag / r.n) + " je Monat; im Fälligkeitsmonat (" + monat + ") wird zusätzlich angezeigt, dass " + fmt(betrag) + " tatsächlich abgehen. Kein zweiter Abzug.";
+  if (f.avg) return "Verteilt: " + fmt(betrag) + " ÷ " + r.n + " = " + fmt(betrag / r.n) + " belasten jeden Monat.";
+  return "Nur im Fälligkeitsmonat: " + fmt(betrag) + " belasten " + monat + ", die übrigen Monate bleiben frei.";
+}
+
 function renderFixed() {
-  const m = cur();
+  const m = cur(), key = data.currentMonth;
   const list = document.getElementById("fixedList");
   list.innerHTML = m.fixed.length ? "" : '<p class="muted" style="font-size:14px;margin:0 0 4px">Noch keine Fixkosten erfasst.</p>';
+
   m.fixed.forEach(f => {
+    const marke = fixMarke(f, key);
+    const offen = offeneFix.has(f.id);
+
     const row = document.createElement("div");
-    row.className = "frow";
+    row.className = "frow" + (!f.avg && !f.only ? " frow--aus" : "");
     row.innerHTML =
-      '<input type="text" class="finput fname" value="' + escapeAttr(f.name) + '" data-id="' + f.id + '" data-field="name">' +
+      '<div class="fnamewrap">' +
+        '<input type="text" class="finput fname" value="' + escapeAttr(f.name) + '" data-id="' + f.id + '" data-field="name">' +
+        (marke ? '<span class="fmarke ' + marke.art + '">' + escapeHtml(marke.text) + '</span>' : '') +
+      '</div>' +
       '<div class="famt"><input type="number" step="0.01" inputmode="decimal" class="finput fval num" value="' + f.amount + '" data-id="' + f.id + '" data-field="amount"><span class="cur">€</span></div>' +
+      '<button class="fmore' + (offen ? " offen" : "") + '" data-more="' + f.id + '" aria-label="Fälligkeit und Verteilung">⌄</button>' +
       '<button class="del" data-del="' + f.id + '" aria-label="Löschen">✕</button>';
     list.appendChild(row);
+
+    if (!offen) return;
+    const det = document.createElement("div");
+    det.className = "fdetail";
+    det.innerHTML =
+      '<div class="fdline">' +
+        '<label class="fdlab">Fällig am<input type="date" class="inp fdinput" data-id="' + f.id + '" data-field="due" value="' + escapeAttr(f.due || "") + '"></label>' +
+        '<label class="fdlab">Rhythmus<select class="inp fdinput" data-id="' + f.id + '" data-field="rhythm">' +
+          Object.keys(RHYTHMEN).map(k => '<option value="' + k + '"' + (f.rhythm === k ? " selected" : "") + '>' + RHYTHMEN[k].lang + '</option>').join("") +
+        '</select></label>' +
+      '</div>' +
+      '<label class="fdcheck"><input type="checkbox" data-id="' + f.id + '" data-field="avg"' + (f.avg ? " checked" : "") + '><span>Im Monatsdurchschnitt einrechnen</span></label>' +
+      '<label class="fdcheck"><input type="checkbox" data-id="' + f.id + '" data-field="only"' + (f.only ? " checked" : "") + '><span>Nur im Fälligkeitsmonat berücksichtigen</span></label>' +
+      '<p class="fdhint">' + escapeHtml(fixModusText(f)) + '</p>';
+    list.appendChild(det);
   });
-  list.querySelectorAll("input").forEach(inp => {
+
+  // Texteingaben und Betraege: laufend, ohne Neuaufbau der Liste
+  list.querySelectorAll(".finput").forEach(inp => {
     inp.addEventListener("input", () => {
       const item = cur().fixed.find(x => x.id === inp.dataset.id);
       if (!item) return;
@@ -682,9 +814,59 @@ function renderFixed() {
       lightUpdate();
     });
   });
+
+  // Datum, Rhythmus, Haken: aendern die Kennzeichnung, deshalb Neuaufbau
+  list.querySelectorAll(".fdetail input, .fdetail select").forEach(el => {
+    el.addEventListener("change", () => {
+      const item = cur().fixed.find(x => x.id === el.dataset.id);
+      if (!item) return;
+      const feld = el.dataset.field;
+      if (feld === "due") item.due = el.value;
+      else if (feld === "rhythm") {
+        item.rhythm = el.value;
+        if (el.value !== "monat" && !item.avg && !item.only) item.avg = true;   // sonst zaehlte der Posten plötzlich nicht mehr
+      }
+      else item[feld] = el.checked;
+      render();
+    });
+  });
+
+  list.querySelectorAll("[data-more]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.more;
+      if (offeneFix.has(id)) offeneFix.delete(id); else offeneFix.add(id);
+      renderFixed();
+    });
+  });
   list.querySelectorAll("[data-del]").forEach(btn => {
     btn.addEventListener("click", () => { cur().fixed = cur().fixed.filter(x => x.id !== btn.dataset.del); render(); });
   });
+
+  renderFixNote(m, key);
+}
+
+// Hinweiszeile unter der Summe: Anteile, tatsaechliche Faelligkeiten, geparkte Posten
+function renderFixNote(m, key) {
+  const el = document.getElementById("fixNote");
+  if (!el) return;
+  const saetze = [];
+
+  const anteil = m.fixed.filter(f => f.avg && rhythmus(f).n > 1)
+                        .reduce((s, f) => s + monatsAnteil(f, key), 0);
+  if (anteil > 0) saetze.push("Darin " + fmt(anteil) + " Anteil aus nicht monatlichen Posten.");
+
+  const faellig = m.fixed.filter(f => rhythmus(f).n > 1 && (f.avg || f.only) && istFaellig(f, key));
+  if (faellig.length) {
+    const summe = faellig.reduce((s, f) => s + (Number(f.amount) || 0), 0);
+    saetze.push("Diesen Monat tatsächlich fällig: " + fmt(summe) +
+                " (" + faellig.map(f => f.name).join(", ") + ").");
+  }
+
+  const geparkt = m.fixed.filter(f => !f.avg && !f.only).length;
+  if (geparkt) saetze.push(geparkt === 1 ? "Ein Posten zählt nicht mit." : geparkt + " Posten zählen nicht mit.");
+
+  el.textContent = saetze.join(" ");
+  el.style.display = saetze.length ? "" : "none";
 }
 
 function renderVariable() {
@@ -894,7 +1076,7 @@ function addFixed() {
   const name = document.getElementById("newFixedName").value.trim();
   const amount = parseFloat(document.getElementById("newFixedAmount").value) || 0;
   if (!name && !amount) return;
-  cur().fixed.push({ id: uid(), name: name || "Neuer Posten", amount });
+  cur().fixed.push(normFixed({ name: name || "Neuer Posten", amount }));
   document.getElementById("newFixedName").value = ""; document.getElementById("newFixedAmount").value = "";
   render(); document.getElementById("newFixedName").focus();
 }
@@ -1238,7 +1420,7 @@ function uebernehmeFixFunde() {
     if (!name || isNaN(betrag) || betrag <= 0) return;
     const alt = vorhandenerPosten(name);
     if (alt) { if (Math.abs(alt.amount - betrag) >= 0.005) { alt.amount = betrag; geaendert++; } }
-    else { m.fixed.push({ id: uid(), name, amount: betrag }); neu++; }
+    else { m.fixed.push(normFixed({ name, amount: betrag })); neu++; }
   });
   if (!neu && !geaendert) { setFixStatus("Nichts angehakt – es wurde nichts übernommen.", true); return; }
   hideFixFound();
@@ -1283,7 +1465,7 @@ function importBackup(file) {
     try { parsed = JSON.parse(reader.result); } catch (e) { setBackupStatus("Ungültige Backup-Datei (kein JSON).", true); return; }
     if (!parsed || typeof parsed !== "object" || !parsed.months || typeof parsed.months !== "object") { setBackupStatus("Ungültige Backup-Datei.", true); return; }
     if (!confirm("Aktuelle Daten werden durch das Backup ersetzt. Fortfahren?")) return;
-    data = parsed;
+    data = normalisiereMonate(parsed);
     if (!data.activeTab) data.activeTab = "overview";
     if (!data.lastCategory) data.lastCategory = CATEGORIES[0].name;
     const ks = Object.keys(data.months).sort();
@@ -1305,7 +1487,10 @@ function reportRows() {
   const m = cur();
   return {
     inc: Number(m.income) || 0, fix: fixedTotal(m), vari: variableTotal(m), buf: buffer(m),
-    fixed: m.fixed.map(f => [f.name, pe(f.amount)]),
+    fixed: m.fixed.map(f => {
+      const marke = fixMarke(f, data.currentMonth);
+      return [f.name + (marke ? " (" + marke.text + ")" : ""), pe(monatsAnteil(f, data.currentMonth))];
+    }),
     variable: [...m.variable].sort((a, b) => (a.date < b.date ? 1 : -1)).map(e => [fmtDate(e.date), e.category || "Sonstiges", e.description || "—", pe(e.amount)]),
   };
 }
