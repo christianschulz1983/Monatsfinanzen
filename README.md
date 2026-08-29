@@ -22,12 +22,21 @@ Kein Server, kein Konto, keine Installation.
 - Monatsnavigation: ein neuer Monat übernimmt Einkommen und Fixkosten des Vormonats,
   die variablen Ausgaben starten leer
 
+**Vorschau**
+- 90-Tage-Vorschau des Kontostands aus Einkommenstag, Fälligkeiten und durchschnittlichem
+  Tagesverbrauch; nennt Tag und Betrag des tiefsten Punktes und die nächsten Zahlungen
+- gerechnet wird der tatsächliche Zahlungsfluss – auch bei Posten, die im Monatsdurchschnitt
+  geführt werden
+
 **Auswertung**
 - Verfügbarer Betrag und Verbrauch im Monatsverlauf
 - Kategorienverteilung als Ringdiagramm
 - Durchschnitt pro Tag und pro Monat
 - Vergleich zum zuletzt erfassten Monat
 - Jahresauswertung mit Monatsbalken und Kategorien des Jahres
+- Auffällig: Kategorien, die um mehr als 15 € und ein Viertel vom eigenen Schnitt der
+  letzten sechs Monate abweichen (im laufenden Monat stichtagsgenau verglichen)
+- Rücklagen: was für verteilt gerechnete Posten bis heute beiseitegelegt sein müsste
 - Bericht als PDF exportieren
 
 ## Starten

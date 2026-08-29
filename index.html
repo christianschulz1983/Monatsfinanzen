@@ -102,6 +102,33 @@ input[type=number]{-moz-appearance:textfield}
 .section-head{display:flex;align-items:center;gap:8px;margin-bottom:16px}
 .dot{width:10px;height:10px;border-radius:999px}
 .dot--fixed{background:var(--fixed500)} .dot--vary{background:var(--vary500)} .dot--stat{background:var(--slate400)}
+.dot--fc{background:#0ea5e9}
+.fcline{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.fclab{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--slate500);flex:1 1 130px}
+.fcres{margin-top:6px}
+.fchint{font-size:14px;color:var(--slate500);margin:10px 0 0;line-height:1.5}
+.fckern{font-size:15px;margin:14px 0 0;line-height:1.55}
+.fckern b{font-weight:600}
+.fckern.eng{color:var(--amber)} .fckern.neg{color:var(--red)}
+.fcchart{margin-top:12px}
+.fcchart svg{display:block;width:100%;height:auto}
+.fclist{margin-top:12px;border-top:1px solid var(--slate100)}
+.fcrow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--slate100);font-size:14px}
+.fcrow:last-child{border-bottom:none}
+.fcdate{flex:none;width:74px;color:var(--slate500);font-size:13px}
+.fcname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fcamt{flex:none;font-weight:600}
+.rrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--slate100);flex-wrap:wrap}
+.rrow:last-child{border-bottom:none}
+.rname{flex:1 1 130px;min-width:0;font-size:14px;font-weight:600}
+.rbar{flex:1 1 100%;height:6px;border-radius:999px;background:var(--slate100);overflow:hidden}
+.rbar span{display:block;height:100%;border-radius:999px;background:#0ea5e9}
+.rmeta{flex:none;font-size:13px;color:var(--slate500)}
+.arow{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--slate100);font-size:14px;line-height:1.5}
+.arow:last-child{border-bottom:none}
+.adot{flex:none;width:9px;height:9px;border-radius:999px;margin-top:6px}
+.aup{color:var(--red);font-weight:600} .adown{color:var(--em600);font-weight:600}
+.leer{font-size:14px;color:var(--slate500);margin:0}
 .section-title{font-size:18px;font-weight:600}
 
 .panel{background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 0 0 1px var(--slate100);overflow:hidden}
@@ -361,6 +388,20 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
     </div>
 
     <section class="section">
+      <div class="section-head"><span class="dot dot--fc"></span><h2 class="section-title">Wann wird es eng?</h2></div>
+      <div class="panel panel-pad">
+        <div class="fcline">
+          <label class="fclab">Kontostand
+            <span class="famt"><input id="balInput" class="inp w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00"><span class="cur">€</span></span>
+          </label>
+          <label class="fclab">Stand vom<input id="balDate" class="inp fdinput" type="date"></label>
+          <label class="fclab">Geld kommt am<select id="incomeDay" class="inp fdinput"></select></label>
+        </div>
+        <div id="fcResult" class="fcres"></div>
+      </div>
+    </section>
+
+    <section class="section">
       <div class="section-head"><span class="dot dot--fixed"></span><h2 class="section-title">Einnahmen &amp; Fixkosten</h2></div>
       <div class="panel">
         <div class="income-row">
@@ -452,6 +493,16 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
       <div class="panel panel-pad">
         <div class="cat-wrap"><div id="catDonut" class="cat-donut"></div><div id="catLegend" class="cat-legend"></div></div>
       </div>
+    </section>
+
+    <section class="section" id="secAuff">
+      <div class="section-head"><span class="dot dot--vary"></span><h2 class="section-title">Auffällig</h2></div>
+      <div class="panel panel-pad"><div id="auffList"></div></div>
+    </section>
+
+    <section class="section" id="secRuecklage">
+      <div class="section-head"><span class="dot dot--fc"></span><h2 class="section-title">Rücklagen</h2></div>
+      <div class="panel panel-pad"><div id="ruecklageList"></div></div>
     </section>
 
     <section class="section">
@@ -575,12 +626,16 @@ function fmt(n) { return eur.format(Number(n) || 0); }
 function pe(n) { return num2.format(Number(n) || 0) + " EUR"; }
 
 function monthKey(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
-function todayISO() { return new Date().toISOString().slice(0, 10); }
+function isoVon(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function todayISO() { return isoVon(new Date()); }   // Ortszeit: toISOString haette nachts den Vortag geliefert
+function tageDiff(a, b) { return Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000); }
+function monatPlus(key, n) { const [y, m] = key.split("-").map(Number); return monthKey(new Date(y, m - 1 + n, 1)); }
 function shiftMonth(key, delta) { const [y, m] = key.split("-").map(Number); return monthKey(new Date(y, m - 1 + delta, 1)); }
 function monthLabel(key) { const [y, m] = key.split("-").map(Number); return new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1)); }
 function monthShort(key) { const [y, m] = key.split("-").map(Number); return new Intl.DateTimeFormat("de-DE", { month: "short" }).format(new Date(y, m - 1, 1)).replace(".", "") + " " + String(y).slice(2); }
 
 let data = load();
+normalisiereStamm(data);
 if (!data.activeTab) data.activeTab = "overview";
 if (!data.lastCategory) data.lastCategory = CATEGORIES[0].name;
 ensureMonth(data.currentMonth);
@@ -650,7 +705,16 @@ function normFixed(f) {
     only: !!(f && f.only),
   };
 }
+function normalisiereStamm(d) {
+  if (!d) return d;
+  if (typeof d.balance !== "number" || isNaN(d.balance)) d.balance = null;
+  if (typeof d.balanceDate !== "string") d.balanceDate = "";
+  const tag = Number(d.incomeDay);
+  d.incomeDay = tag >= 1 && tag <= 28 ? Math.round(tag) : 1;
+  return d;
+}
 function normalisiereMonate(d) {
+  normalisiereStamm(d);
   if (!d || !d.months) return d;
   Object.keys(d.months).forEach(k => {
     const m = d.months[k];
@@ -696,6 +760,7 @@ function render() {
   renderFixed();
   renderVariable();
   renderDashboard();
+  renderVorschau();
   renderStats();
   renderEval();
   applyTab(data.activeTab);
@@ -916,7 +981,7 @@ function renderBudget(vari) {
 }
 
 // --- Auswertung ---
-function renderEval() { renderAvailable(); renderCategory(); renderAverages(); renderEvalTable(); renderYear(); }
+function renderEval() { renderAvailable(); renderCategory(); renderAuffaellig(); renderRuecklagen(); renderAverages(); renderEvalTable(); renderYear(); }
 
 function renderAvailable() {
   const m = cur();
@@ -1442,6 +1507,242 @@ document.getElementById("ffAll").addEventListener("click", () => {
 });
 document.getElementById("ffDrop").addEventListener("click", () => { hideFixFound(); setFixStatus(""); });
 
+// --- Vorschau: wann wird es eng? ---
+const VORSCHAU_TAGE = 90;
+
+// Monat als Vorlage: kuenftige Monate gibt es noch nicht, dann gilt der letzte bekannte
+function monatFuerVorschau(key) {
+  if (data.months[key]) return data.months[key];
+  const vorher = Object.keys(data.months).filter(k => k <= key).sort();
+  return vorher.length ? data.months[vorher[vorher.length - 1]] : cur();
+}
+
+// Geschaetzter variabler Verbrauch pro Tag
+function tagesverbrauch() {
+  const m = cur();
+  if (m.budgetEnabled && Number(m.dailyBudget) > 0) return Number(m.dailyBudget);
+  const ks = recordedKeys().filter(k => k !== data.currentMonth).slice(-6);
+  if (ks.length) {
+    let summe = 0, tage = 0;
+    ks.forEach(k => { summe += variableTotal(data.months[k]); tage += daysInMonth(k); });
+    return tage ? summe / tage : 0;
+  }
+  const bisher = variableTotal(m);
+  return bisher > 0 ? bisher / Math.max(1, new Date().getDate()) : 0;
+}
+
+// Tatsaechliche Zahlungen eines Monats - unabhaengig davon, ob der Posten verteilt gerechnet wird
+function fixZahlungen(key) {
+  const m = monatFuerVorschau(key);
+  if (!m) return [];
+  const maxTag = daysInMonth(key);
+  return m.fixed
+    .filter(f => (f.avg || f.only) && istFaellig(f, key) && (Number(f.amount) || 0) > 0)
+    .map(f => ({
+      tag: Math.min(f.due ? (Number(f.due.slice(8, 10)) || 1) : 1, maxTag),
+      name: f.name,
+      betrag: Number(f.amount) || 0,
+    }));
+}
+
+function echteAusgabenProTag(vonISO, bisISO) {
+  const map = {};
+  Object.keys(data.months).forEach(k => {
+    data.months[k].variable.forEach(e => {
+      if (e.date && e.date >= vonISO && e.date <= bisISO) map[e.date] = (map[e.date] || 0) + (Number(e.amount) || 0);
+    });
+  });
+  return map;
+}
+
+function vorschau() {
+  if (data.balance === null || isNaN(Number(data.balance))) return null;
+  const heuteISO = todayISO();
+  let startISO = data.balanceDate || heuteISO;
+  if (startISO > heuteISO) startISO = heuteISO;          // ein Stand aus der Zukunft ergibt keinen Sinn
+  const vorlauf = Math.max(0, tageDiff(startISO, heuteISO));
+  const proTag = tagesverbrauch();
+  const echt = echteAusgabenProTag(startISO, heuteISO);
+
+  let saldo = Number(data.balance);
+  const punkte = [], zahlungen = [];
+  let min = null;
+  const d = new Date(startISO + "T12:00:00");
+
+  for (let i = 0; i <= vorlauf + VORSCHAU_TAGE; i++) {
+    const iso = isoVon(d), key = iso.slice(0, 7), tag = d.getDate();
+    if (i > 0) {
+      if (tag === (data.incomeDay || 1)) saldo += Number(monatFuerVorschau(key).income) || 0;
+      fixZahlungen(key).forEach(z => {
+        if (z.tag !== tag) return;
+        saldo -= z.betrag;
+        if (iso >= heuteISO) zahlungen.push({ iso, name: z.name, betrag: z.betrag });
+      });
+      // Vergangene Tage: was wirklich gebucht wurde. Heute: der groessere von beiden,
+      // sonst faellt der angebrochene Tag unter den Tisch. Kuenftige Tage: die Schaetzung.
+      const gebucht = echt[iso] || 0;
+      saldo -= iso < heuteISO ? gebucht : (iso === heuteISO ? Math.max(gebucht, proTag) : proTag);
+    }
+    punkte.push({ iso, saldo });
+    if (iso >= heuteISO && (!min || saldo < min.saldo)) min = { iso, saldo };
+    d.setDate(d.getDate() + 1);
+  }
+  return { punkte, min, zahlungen: zahlungen.slice(0, 6), proTag, startISO, heuteISO, veraltet: vorlauf > 3 };
+}
+
+function vorschauChart(v) {
+  const p = v.punkte.filter(x => x.iso >= v.heuteISO);
+  if (p.length < 2) return "";
+  const W = 320, H = 96, oben = 8, unten = 16;
+  const werte = p.map(x => x.saldo);
+  const hoch = Math.max(...werte, 0), tief = Math.min(...werte, 0);
+  const spanne = (hoch - tief) || 1;
+  const px = i => (i / (p.length - 1)) * W;
+  const py = w => oben + (1 - (w - tief) / spanne) * (H - oben - unten);
+  const linie = p.map((pt, i) => (i ? "L" : "M") + px(i).toFixed(1) + " " + py(pt.saldo).toFixed(1)).join(" ");
+  const boden = py(tief);
+  const iMin = p.findIndex(pt => pt.iso === v.min.iso);
+  const farbe = v.min.saldo < 0 ? "#dc2626" : v.min.saldo < 150 ? "#d97706" : "#0ea5e9";
+  return '<div class="fcchart"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Kontostand der nächsten 90 Tage">' +
+    '<path d="' + linie + ' L' + W + ' ' + boden + ' L0 ' + boden + ' Z" fill="' + farbe + '" opacity=".12"/>' +
+    (tief < 0 ? '<line x1="0" y1="' + py(0).toFixed(1) + '" x2="' + W + '" y2="' + py(0).toFixed(1) + '" stroke="#dc2626" stroke-width="1" stroke-dasharray="4 3"/>' : "") +
+    '<path d="' + linie + '" fill="none" stroke="' + farbe + '" stroke-width="2" stroke-linejoin="round"/>' +
+    (iMin >= 0 ? '<circle cx="' + px(iMin).toFixed(1) + '" cy="' + py(v.min.saldo).toFixed(1) + '" r="3.5" fill="' + farbe + '"/>' : "") +
+    '</svg></div>';
+}
+
+function renderVorschau() {
+  const el = document.getElementById("fcResult");
+  if (!el) return;
+  const v = vorschau();
+  if (!v) {
+    el.innerHTML = '<p class="fchint">Trag deinen Kontostand ein – dann rechne ich 90 Tage voraus: Gehalt, jede fällige Fixzahlung und dein bisheriger Verbrauch. Du siehst dann auf den Tag genau, wann es knapp wird.</p>';
+    return;
+  }
+  const tag = iso => { const d = new Date(iso + "T12:00:00"); return dateFmt.format(d).replace(/\.\d{4}$/, "."); };
+  let satz, art = "";
+  if (v.min.saldo < 0) {
+    art = "neg";
+    satz = "Es reicht nicht: Am <b>" + tag(v.min.iso) + "</b> fehlen <b>" + fmt(-v.min.saldo) + "</b>.";
+  } else if (v.min.saldo < 150) {
+    art = "eng";
+    satz = "Am engsten am <b>" + tag(v.min.iso) + "</b> mit <b>" + fmt(v.min.saldo) + "</b> – das wird knapp.";
+  } else {
+    satz = "Tiefster Punkt: <b>" + tag(v.min.iso) + "</b> mit <b>" + fmt(v.min.saldo) + "</b>. Bis dahin und danach bleibt Luft.";
+  }
+  const liste = v.zahlungen.length
+    ? '<div class="fclist">' + v.zahlungen.map(z =>
+        '<div class="fcrow"><span class="fcdate">' + tag(z.iso) + '</span>' +
+        '<span class="fcname">' + escapeHtml(z.name) + '</span>' +
+        '<span class="fcamt num">− ' + fmt(z.betrag) + '</span></div>').join("") + '</div>'
+    : "";
+  el.innerHTML =
+    '<p class="fckern ' + art + '">' + satz + '</p>' +
+    vorschauChart(v) +
+    '<p class="fchint">Gerechnet mit ' + fmt(v.proTag) + ' variablem Verbrauch je Tag' +
+      (v.veraltet ? ' · Kontostand ist vom ' + tag(v.startISO) + ', seither eingetragene Ausgaben sind berücksichtigt' : '') + '.</p>' +
+    liste;
+}
+
+// --- Rücklagen: was für die verteilten Posten beiseite liegen müsste ---
+function ruecklagen(key) {
+  const m = data.months[key] || cur();
+  return m.fixed
+    .filter(f => f.avg && rhythmus(f).n > 1 && f.due && (Number(f.amount) || 0) > 0)
+    .map(f => {
+      const n = rhythmus(f).n, betrag = Number(f.amount) || 0, anteil = betrag / n;
+      const seit = ((monateDiff(f.due.slice(0, 7), key) % n) + n) % n;   // Monate seit der letzten Fälligkeit
+      const soll = seit === 0 ? betrag : anteil * seit;                  // im Fälligkeitsmonat der volle Betrag
+      return { name: f.name, betrag, anteil, soll, faelligJetzt: seit === 0, naechster: monatPlus(key, seit === 0 ? 0 : n - seit) };
+    });
+}
+
+function renderRuecklagen() {
+  const box = document.getElementById("ruecklageList");
+  if (!box) return;
+  const key = data.currentMonth;
+  const r = ruecklagen(key);
+  document.getElementById("secRuecklage").style.display = r.length ? "" : "none";
+  if (!r.length) return;
+  const summe = r.reduce((s, x) => s + x.soll, 0);
+  box.innerHTML =
+    r.map(x => {
+      const anteilProzent = Math.max(0, Math.min(100, (x.soll / x.betrag) * 100));
+      return '<div class="rrow">' +
+        '<span class="rname">' + escapeHtml(x.name) + '</span>' +
+        '<span class="rmeta num">' + fmt(x.soll) + ' von ' + fmt(x.betrag) + '</span>' +
+        '<span class="rbar"><span style="width:' + anteilProzent.toFixed(0) + '%"></span></span>' +
+        '<span class="rmeta">' + (x.faelligJetzt ? "diesen Monat fällig" : "fällig " + monthLabel(x.naechster)) + '</span>' +
+        '</div>';
+    }).join("") +
+    '<p class="fchint">Zusammen <b>' + fmt(summe) + '</b>. So viel müsstest du bis heute beiseitegelegt haben, damit die verteilte Rechnung aufgeht – der Puffer oben unterstellt es bereits.</p>';
+}
+
+// --- Auffällig: Kategorien gegen den eigenen Schnitt ---
+function auffaelligkeiten(key) {
+  const m = data.months[key];
+  if (!m) return { zeilen: [], hinweis: "Für diesen Monat liegen keine Daten vor." };
+  const heuteISO = todayISO();
+  const laufend = key === heuteISO.slice(0, 7);
+  const stichtag = laufend ? Number(heuteISO.slice(8, 10)) : 31;
+  const bisStichtag = mm => {
+    const map = {};
+    mm.variable.forEach(e => {
+      if (!e.date || Number(e.date.slice(8, 10)) > stichtag) return;
+      const c = e.category || "Sonstiges";
+      map[c] = (map[c] || 0) + (Number(e.amount) || 0);
+    });
+    return map;
+  };
+  const vorher = recordedKeys().filter(k => k < key).slice(-6);
+  if (vorher.length < 2) return { zeilen: [], hinweis: "Für den Vergleich braucht es mindestens zwei frühere Monate mit Ausgaben – dann steht hier, was aus dem Rahmen fällt." };
+
+  const jetzt = bisStichtag(m), schnitt = {};
+  vorher.forEach(k => { const mp = bisStichtag(data.months[k]); Object.keys(mp).forEach(c => { schnitt[c] = (schnitt[c] || 0) + mp[c]; }); });
+  Object.keys(schnitt).forEach(c => { schnitt[c] /= vorher.length; });
+
+  const zeilen = [];
+  new Set([...Object.keys(jetzt), ...Object.keys(schnitt)]).forEach(c => {
+    const a = jetzt[c] || 0, b = schnitt[c] || 0;
+    const diff = a - b;
+    if (Math.abs(diff) < 15) return;                    // Kleinkram ist kein Ausreißer
+    if (b > 0 && Math.abs(diff / b) < 0.25) return;     // weniger als ein Viertel Abweichung
+    zeilen.push({ name: c, jetzt: a, schnitt: b, diff, proz: b > 0 ? Math.round((diff / b) * 100) : null });
+  });
+  zeilen.sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff));
+  return { zeilen: zeilen.slice(0, 6), monate: vorher.length, stichtag, laufend, hinweis: "" };
+}
+
+function renderAuffaellig() {
+  const box = document.getElementById("auffList");
+  if (!box) return;
+  const a = auffaelligkeiten(data.currentMonth);
+  if (a.hinweis) { box.innerHTML = '<p class="leer">' + a.hinweis + '</p>'; return; }
+  if (!a.zeilen.length) {
+    box.innerHTML = '<p class="leer">Nichts Auffälliges – alle Kategorien liegen im Rahmen deiner letzten ' + a.monate + ' Monate.</p>';
+    return;
+  }
+  box.innerHTML = a.zeilen.map(z => {
+    const hoch = z.diff > 0;
+    const kopf = z.proz === null
+      ? '<span class="' + (hoch ? "aup" : "adown") + '">neu</span> – bisher gab es hier keine Ausgaben'
+      : '<span class="' + (hoch ? "aup" : "adown") + '">' + Math.abs(z.proz) + ' % ' + (hoch ? "über" : "unter") + '</span> deinem Schnitt (' + fmt(z.schnitt) + ')';
+    return '<div class="arow"><span class="adot" style="background:' + categoryColor(z.name) + '"></span>' +
+      '<span><b>' + escapeHtml(z.name) + ':</b> ' + fmt(z.jetzt) + ' – ' + kopf + '</span></div>';
+  }).join("") +
+  '<p class="fchint">Verglichen mit dem Schnitt der letzten ' + a.monate + ' Monate' +
+    (a.laufend ? ', jeweils nur bis zum ' + a.stichtag + '. des Monats – sonst wäre der laufende Monat im Nachteil' : '') + '.</p>';
+}
+
+document.getElementById("balInput").addEventListener("input", e => {
+  const v = parseFloat(e.target.value);
+  data.balance = e.target.value === "" || isNaN(v) ? null : v;
+  if (!data.balanceDate) data.balanceDate = todayISO();
+  renderVorschau(); save();
+});
+document.getElementById("balDate").addEventListener("change", e => { data.balanceDate = e.target.value || todayISO(); renderVorschau(); save(); });
+document.getElementById("incomeDay").addEventListener("change", e => { data.incomeDay = Number(e.target.value) || 1; renderVorschau(); save(); });
+
 // --- Backup ---
 function setBackupStatus(msg, err) { const el = document.getElementById("backupStatus"); el.textContent = msg || ""; el.className = "backup-status " + (err ? "neg" : "pos"); }
 
@@ -1536,6 +1837,15 @@ function printReport() {
 function initFields() {
   document.getElementById("incomeInput").value = cur().income;
   document.getElementById("monthInput").value = data.currentMonth;
+  const bal = document.getElementById("balInput");
+  if (bal && document.activeElement !== bal) bal.value = data.balance === null ? "" : data.balance;
+  const bd = document.getElementById("balDate");
+  if (bd) bd.value = data.balanceDate || todayISO();
+  const id = document.getElementById("incomeDay");
+  if (id && !id.options.length) {
+    id.innerHTML = Array.from({ length: 28 }, (_, i) => '<option value="' + (i + 1) + '">' + (i + 1) + '. des Monats</option>').join("");
+  }
+  if (id) id.value = String(data.incomeDay || 1);
 }
 function resetExpenseForm() {
   document.getElementById("expDate").value = todayISO();

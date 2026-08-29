@@ -41,7 +41,7 @@ section{margin-top:32px}
 .section-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .dot{width:9px;height:9px;border-radius:999px;flex:none}
 .d1{background:var(--em600)} .d2{background:var(--fixed500)} .d3{background:#f97316}
-.d4{background:#0ea5e9} .d5{background:var(--amber)}
+.d4{background:#0ea5e9} .d5{background:var(--amber)} .d6{background:#0ea5e9}
 h2{font-size:19px;font-weight:600}
 .panel{background:#fff;border-radius:16px;padding:18px 20px;
        box-shadow:0 1px 2px rgba(0,0,0,.05),0 0 0 1px var(--slate100)}
@@ -187,6 +187,41 @@ td:first-child{white-space:nowrap;font-weight:600}
          Zahlen ergibt: verfügbares Budget, Ausgaben nach Kategorie als Ring, Durchschnitt je
          Monat und Tag, Veränderung zum Vormonat, Verlauf über bis zu zwölf Monate und die
          Jahresauswertung mit teuerstem und günstigstem Monat.</p>
+      <p>Zwei Abschnitte dort lohnen den Blick:</p>
+      <p><b>Auffällig</b> vergleicht jede Kategorie mit deinem eigenen Schnitt der letzten
+         sechs Monate – <i>„Lebensmittel: 312,00 € – 38 % über deinem Schnitt (226,00 €)"</i>.
+         Im laufenden Monat wird fair verglichen: in den Vormonaten zählt nur, was bis zum
+         gleichen Tag ausgegeben war. Genannt wird erst, was um mehr als 15 € <b>und</b> ein
+         Viertel abweicht – sonst wäre es Rauschen.</p>
+      <p><b>Rücklagen</b> zeigt für jeden verteilt gerechneten Posten, wie viel bis heute
+         beiseitegelegt sein müsste – <i>„Kfz-Haftpflicht: 238,33 € von 260,00 €, fällig Juni"</i>.
+         Der Puffer oben unterstellt diese Rücklage bereits; hier siehst du, ob sie wirklich
+         existiert.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="dot d6"></span><h2>Wann wird es eng?</h2></div>
+    <div class="panel">
+      <p>Der Abschnitt oben auf der Übersicht rechnet <b>90 Tage voraus</b>. Dafür brauchst du
+         drei Angaben, die einmal gesetzt bleiben:</p>
+      <ul>
+        <li><b>Kontostand</b> – der Betrag, der jetzt auf dem Konto ist</li>
+        <li><b>Stand vom</b> – wann das galt (meist heute)</li>
+        <li><b>Geld kommt am</b> – der Tag, an dem dein Einkommen eingeht</li>
+      </ul>
+      <p>Daraus entsteht ein Satz wie <b>„Am engsten am 15.06. mit 43,00 € – das wird knapp."</b>
+         Darunter die Kurve der nächsten 90 Tage und die nächsten sechs Zahlungen mit Datum.
+         Reicht es nicht, steht dort stattdessen, an welchem Tag wie viel fehlt.</p>
+      <p>Gerechnet wird mit deinem tatsächlichen Verhalten: Einkommen am hinterlegten Tag, jede
+         fällige Fixzahlung an ihrem Fälligkeitstag und dein durchschnittlicher variabler
+         Verbrauch pro Tag. Ist ein Tagesbudget gesetzt, gilt dieses.</p>
+      <p class="hint">Wichtig für den Sinn der Sache: Hier zählt das <b>echte Geld</b>. Eine
+         jährliche Versicherung, die du im Durchschnitt einrechnest, wird in der Vorschau
+         trotzdem am Fälligkeitstag in voller Höhe abgebucht – denn genau so passiert es auf
+         dem Konto. Nur geparkte Posten ohne Haken bleiben außen vor.</p>
+      <p>Halte den Kontostand hin und wieder aktuell. Liegt er länger zurück, zieht die App die
+         seither eingetragenen Ausgaben ab und weist unter der Kurve darauf hin.</p>
     </div>
   </section>
 
