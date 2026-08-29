@@ -8,6 +8,9 @@ Kein Server, kein Konto, keine Installation.
 
 **Übersicht**
 - Monatliches Einkommen und Fixkosten selbst anlegen, Summe wird laufend gerechnet
+- Fixkosten aus Kontoauszug, Schreiben oder Aufstellung einlesen (PDF oder Foto):
+  erkannte Posten erscheinen als Vorschlagsliste, übernommen wird nur das Angehakte;
+  ein bereits bekannter Posten bekommt den neuen Betrag statt eines zweiten Eintrags
 - Ausgabebuch mit neun Kategorien (Lebensmittel, Tanken/Auto, Kinder, Freizeit …)
 - Verbleibender Puffer als große Kennzahl, farbig nach Lage (grün / gelb / rot)
 - Optionales Tagesbudget mit Hochrechnung auf den Monat

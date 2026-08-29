@@ -251,6 +251,20 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .scanprev.hidden{display:none}
 .scanthumb{width:56px;height:56px;object-fit:cover;border-radius:8px;box-shadow:0 0 0 1px var(--slate200)}
 .scanstatus{font-size:13px;color:var(--slate500);margin:10px 0 0;min-height:18px}
+.fixscan{padding:12px 16px;border-top:1px solid var(--fixed100);background:rgba(238,242,255,.25)}
+.fixscan .scanstatus{margin:8px 0 0}
+.fixfound{margin-top:10px;background:#fff;border-radius:12px;box-shadow:0 0 0 1px var(--slate200);overflow:hidden}
+.fixfound.hidden{display:none}
+.ffhead{font-size:12px;font-weight:600;color:var(--slate500);padding:9px 12px;background:var(--slate50)}
+.ffrow{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--slate100);flex-wrap:wrap}
+.ffcheck{flex:none;width:17px;height:17px;accent-color:var(--fixed600)}
+.ffname{flex:1 1 130px;min-width:0}
+.ffbadge{flex:none;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.ffbadge.neu{background:var(--fixed50);color:var(--fixed700)}
+.ffbadge.upd{background:var(--vary50);color:var(--vary700)}
+.ffbadge.gleich{background:var(--slate100);color:var(--slate500)}
+.ffactions{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--slate100);flex-wrap:wrap}
+.ffactions .link-reset{margin-left:auto}
 .scanstatus.err{color:var(--red)}
 .ereceipt{width:28px;height:28px;object-fit:cover;border-radius:6px;box-shadow:0 0 0 1px var(--slate200);cursor:pointer;flex-shrink:0}
 .lightbox{position:fixed;inset:0;background:rgba(15,23,42,.85);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
@@ -338,6 +352,20 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           <input id="newFixedName" class="inp grow" type="text" placeholder="Neuer Posten">
           <input id="newFixedAmount" class="inp w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00">
           <button id="addFixedBtn" class="addbtn" aria-label="Fixposten hinzufügen">+</button>
+        </div>
+        <div class="fixscan">
+          <button id="fixScanBtn" class="btn-outline" type="button">📄 Fixkosten einlesen (Foto / PDF)</button>
+          <input id="fixScanFile" type="file" accept="image/*,application/pdf" style="display:none">
+          <p id="fixScanStatus" class="scanstatus"></p>
+          <div id="fixFound" class="fixfound hidden">
+            <p class="ffhead" id="ffHead">Gefundene Posten</p>
+            <div id="fixFoundList"></div>
+            <div class="ffactions">
+              <button id="ffApply" class="btn-dark" type="button">Ausgewählte übernehmen</button>
+              <button id="ffAll" class="btn-outline" type="button">Alle auswählen</button>
+              <button id="ffDrop" class="link-reset" type="button">Verwerfen</button>
+            </div>
+          </div>
         </div>
         <div class="total"><span class="total-label">Summe Fixkosten</span><span class="total-val num" id="fixedTotal">–</span></div>
       </div>
@@ -1053,6 +1081,184 @@ async function handleReceiptFile(file) {
     setScanStatus(msg + " Bitte prüfen.");
   } catch (e) { setScanStatus("Beleg konnte nicht verarbeitet werden.", true); }
 }
+
+// --- Fixkosten einlesen (Foto/PDF -> Posten vorschlagen) ---
+function setFixStatus(msg, err) { const el = document.getElementById("fixScanStatus"); el.textContent = msg || ""; el.className = "scanstatus" + (err ? " err" : ""); }
+function hideFixFound() { document.getElementById("fixFound").classList.add("hidden"); document.getElementById("fixFoundList").innerHTML = ""; }
+
+// Textebene einer PDF auslesen; genauer als Texterkennung, sofern vorhanden
+async function pdfText(file, maxSeiten) {
+  if (typeof pdfjsLib === "undefined") return null;
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    let text = "";
+    for (let i = 1; i <= Math.min(pdf.numPages, maxSeiten); i++) {
+      const inhalt = await (await pdf.getPage(i)).getTextContent();
+      const zeilen = new Map();
+      inhalt.items.forEach(it => {
+        const y = Math.round(it.transform[5] / 2) * 2;          // Zeilen ueber die Hoehe gruppieren
+        if (!zeilen.has(y)) zeilen.set(y, []);
+        zeilen.get(y).push({ x: it.transform[4], s: it.str });
+      });
+      [...zeilen.entries()].sort((a, b) => b[0] - a[0]).forEach(([, teile]) => {
+        text += teile.sort((a, b) => a.x - b.x).map(t => t.s).join(" ").replace(/\s{2,}/g, " ").trim() + "\n";
+      });
+    }
+    return text;
+  } catch (e) { return null; }
+}
+
+async function ocrText(quelle) {
+  if (typeof Tesseract === "undefined") return null;
+  const r = await Tesseract.recognize(quelle, "deu");
+  return r && r.data ? r.data.text : "";
+}
+
+// Reine, testbare Erkennung wiederkehrender Posten aus Text
+function parseFixedItems(text) {
+  if (!text) return [];
+  const SKIP_ZEILE = /(summe|gesamt|saldo|kontostand|übertrag|uebertrag|zwischensumme|blz|iban|bic|kontoauszug|auszug\s*nr|seite\s*\d)/i;
+  const SKIP_EINGANG = /(gutschrift|\blohn\b|gehalt|\brente\b|erstattung|zahlungseingang|\beingang\b|kindergeld)/i;
+  const SKIP_VARIABEL = /(kartenzahlung|karteneinsatz|\bbargeld\b|geldautomat|\bauszahlung\b|apple\s*pay|google\s*pay|paypal)/i;
+  const GELD = /-?\d{1,3}(?:[.\s]\d{3})*[.,]\d{2}|-?\d+[.,]\d{2}/g;
+  const DATUM = /\b\d{1,2}[.\/-]\d{1,2}(?:[.\/-]\d{2,4})?\.?(?=\s|$)/g;
+  const RAUSCH = /\b(sepa|basislastschrift|lastschrift|dauerauftrag|dauerauftr|überweisung|ueberweisung|mandat|mandatsref\w*|ref|referenz|verwendungszweck|end-to-end|eref|kref|mref|cred|svwz|abwa|buchung|beleg|valuta|monatlich|monatsbeitrag|rechnung|kundennr|kunden-nr|kundennummer|vertragsnr|vertragsnummer|nr|eur|euro)\b\.?/gi;
+
+  const zahl = str => {
+    let t = String(str).replace(/\s/g, "");
+    if (t.includes(".") && t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+    else if (t.includes(",")) t = t.replace(",", ".");
+    const n = parseFloat(t);
+    return isNaN(n) ? null : n;
+  };
+  const wortFall = w => {
+    if (/^gmbh$/i.test(w)) return "GmbH";
+    if (/^(ag|kg|ohg|se|ev)$/i.test(w)) return w.toUpperCase();
+    return (w.length > 3 && w === w.toUpperCase() && /[A-ZÄÖÜ]/.test(w)) ? w[0] + w.slice(1).toLowerCase() : w;
+  };
+  const kuerzen = (t, max) => {
+    if (t.length <= max) return t;
+    const schnitt = t.slice(0, max), luecke = schnitt.lastIndexOf(" ");
+    return (luecke > max * 0.5 ? schnitt.slice(0, luecke) : schnitt).trim();
+  };
+
+  const treffer = [], gesehen = new Set();
+  String(text).split(/\r?\n/).forEach(roh => {
+    if (!roh.trim() || SKIP_ZEILE.test(roh) || SKIP_EINGANG.test(roh) || SKIP_VARIABEL.test(roh)) return;
+    const zeile = roh.replace(DATUM, " ");                       // erst Datum weg, sonst gilt es als Betrag
+    const funde = [...zeile.matchAll(GELD)];
+    if (!funde.length) return;
+    const letzter = funde[funde.length - 1];
+    const betrag = zahl(letzter[0]);
+    if (betrag == null) return;
+    const wert = Math.abs(betrag);
+    if (wert <= 0 || wert > 100000) return;
+
+    let name = zeile.slice(0, letzter.index)
+      .replace(/[A-Z]{2}\d{2}[A-Z0-9]{8,}/g, " ")
+      .replace(RAUSCH, " ")
+      .replace(/(?:^|\s)[\d/-]{3,}(?=\s|$)/g, " ")
+      .replace(/[€|*]/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[\s.,;:/–-]+|[\s.,;:/–-]+$/g, "")
+      .trim();
+    name = kuerzen(name.split(/\s+/).map(wortFall).join(" "), 40).replace(/[\s.,;:/–-]+$/, "");
+    if (name.length < 3 || !/[A-Za-zÄÖÜäöüß]{3}/.test(name)) return;
+
+    const key = name.toLowerCase();
+    if (gesehen.has(key)) return;
+    gesehen.add(key);
+    treffer.push({ name, amount: Math.round(wert * 100) / 100 });
+  });
+  return treffer.slice(0, 40);
+}
+
+function vorhandenerPosten(name) {
+  const k = String(name).trim().toLowerCase();
+  return cur().fixed.find(f => f.name.trim().toLowerCase() === k) || null;
+}
+
+function zeigeFixFunde(funde) {
+  document.getElementById("ffHead").textContent =
+    funde.length + (funde.length === 1 ? " Posten gefunden" : " Posten gefunden") + " – Haken setzen bei dem, was übernommen werden soll";
+  document.getElementById("fixFoundList").innerHTML = funde.map((f, i) => {
+    const alt = vorhandenerPosten(f.name);
+    const marke = !alt ? '<span class="ffbadge neu">neu</span>'
+      : Math.abs(alt.amount - f.amount) < 0.005 ? '<span class="ffbadge gleich">unverändert</span>'
+      : '<span class="ffbadge upd">statt ' + fmt(alt.amount) + '</span>';
+    return '<div class="ffrow">' +
+      '<input type="checkbox" class="ffcheck" data-i="' + i + '">' +
+      '<input type="text" class="inp ffname" data-i="' + i + '" value="' + escapeAttr(f.name) + '">' +
+      '<div class="famt"><input type="number" step="0.01" inputmode="decimal" class="inp w-amt num ffamt" data-i="' + i + '" value="' + f.amount + '"><span class="cur">€</span></div>' +
+      marke + '</div>';
+  }).join("");
+  document.getElementById("fixFound").classList.remove("hidden");
+}
+
+async function handleFixedFile(file) {
+  if (!file) return;
+  hideFixFound();
+  setFixStatus("Datei wird gelesen …");
+  try {
+    let text = null;
+    if (file.type === "application/pdf") {
+      text = await pdfText(file, 5);
+      if (!text || text.replace(/\s/g, "").length < 40) {           // Scan ohne Textebene
+        setFixStatus("Kein Text in der PDF – Texterkennung läuft, das dauert einen Moment.");
+        const cv = await renderPdfFirstPage(file);
+        if (!cv) { setFixStatus("PDF konnte nicht gelesen werden (Internetverbindung nötig?).", true); return; }
+        text = await ocrText(cv);
+      }
+    } else {
+      const img = await loadImage(file);
+      setFixStatus("Text wird erkannt … das dauert einen Moment.");
+      text = await ocrText(scaleToCanvas(img, 1600));
+    }
+    if (text == null) { setFixStatus("Texterkennung nicht verfügbar (Internet nötig).", true); return; }
+    const funde = parseFixedItems(text);
+    if (!funde.length) {
+      setFixStatus("Keine Posten erkannt. Bei einem Foto hilft: gerade von oben, gutes Licht, näher heran.", true);
+      return;
+    }
+    zeigeFixFunde(funde);
+    setFixStatus("Bitte Beträge und Bezeichnungen prüfen – übernommen wird nur, was angehakt ist.");
+  } catch (e) { setFixStatus("Datei konnte nicht verarbeitet werden.", true); }
+}
+
+function uebernehmeFixFunde() {
+  const liste = document.getElementById("fixFoundList");
+  const m = cur();
+  let neu = 0, geaendert = 0;
+  liste.querySelectorAll(".ffcheck").forEach(cb => {
+    if (!cb.checked) return;
+    const i = cb.dataset.i;
+    const name = liste.querySelector('.ffname[data-i="' + i + '"]').value.trim();
+    const betrag = parseFloat(liste.querySelector('.ffamt[data-i="' + i + '"]').value);
+    if (!name || isNaN(betrag) || betrag <= 0) return;
+    const alt = vorhandenerPosten(name);
+    if (alt) { if (Math.abs(alt.amount - betrag) >= 0.005) { alt.amount = betrag; geaendert++; } }
+    else { m.fixed.push({ id: uid(), name, amount: betrag }); neu++; }
+  });
+  if (!neu && !geaendert) { setFixStatus("Nichts angehakt – es wurde nichts übernommen.", true); return; }
+  hideFixFound();
+  render();
+  const teile = [];
+  if (neu) teile.push(neu + (neu === 1 ? " Posten neu" : " Posten neu"));
+  if (geaendert) teile.push(geaendert + (geaendert === 1 ? " Betrag geändert" : " Beträge geändert"));
+  setFixStatus(teile.join(", ") + ". Die Fixkosten gelten ab dem angezeigten Monat.");
+}
+
+document.getElementById("fixScanBtn").addEventListener("click", () => document.getElementById("fixScanFile").click());
+document.getElementById("fixScanFile").addEventListener("change", e => { const f = e.target.files[0]; if (f) handleFixedFile(f); e.target.value = ""; });
+document.getElementById("ffApply").addEventListener("click", uebernehmeFixFunde);
+document.getElementById("ffAll").addEventListener("click", () => {
+  const boxen = [...document.querySelectorAll("#fixFoundList .ffcheck")];
+  const alleAn = boxen.every(b => b.checked);
+  boxen.forEach(b => { b.checked = !alleAn; });
+  document.getElementById("ffAll").textContent = alleAn ? "Alle auswählen" : "Alle abwählen";
+});
+document.getElementById("ffDrop").addEventListener("click", () => { hideFixFound(); setFixStatus(""); });
 
 // --- Backup ---
 function setBackupStatus(msg, err) { const el = document.getElementById("backupStatus"); el.textContent = msg || ""; el.className = "backup-status " + (err ? "neg" : "pos"); }
