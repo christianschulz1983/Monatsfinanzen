@@ -26,8 +26,21 @@ Kein Server, kein Konto, keine Installation.
 
 ## Starten
 
-Die Datei `index.html` genügt – Doppelklick, fertig. Alternativ über GitHub Pages
-im Browser aufrufen (Settings → Pages → Branch `main`, Ordner `/`).
+Im Browser: https://christianschulz1983.github.io/Monatsfinanzen/
+
+Ohne Internet genügt die Datei `index.html` – Doppelklick, fertig.
+
+### Auf dem iPhone als App
+
+In **Safari** die Adresse öffnen, unten auf **Teilen** → **Zum Home-Bildschirm**.
+Die App startet danach im Vollbild ohne Adressleiste, mit eigenem Symbol.
+
+Wichtig: iOS führt für eine so installierte App einen **eigenen Speicher**, getrennt
+von Safari. Was in Safari eingetragen wurde, erscheint dort nicht – am besten von
+Anfang an nur über das Symbol auf dem Home-Bildschirm arbeiten.
+
+`manifest.webmanifest` und die drei `icon-*.png` machen die Seite zur installierbaren
+Web-App (Symbol, Vollbild, Startfarbe); für den reinen Browserbetrieb sind sie entbehrlich.
 
 Für Belegscan und PDF-Export lädt die Seite vier Bibliotheken von öffentlichen CDNs
 (jsPDF, jsPDF-AutoTable, tesseract.js, pdf.js). Ohne Internet funktioniert alles
