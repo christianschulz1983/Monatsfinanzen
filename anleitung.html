@@ -163,6 +163,23 @@ td:first-child{white-space:nowrap;font-weight:600}
          dann buchen. Der Beleg hängt danach an der Ausgabe; ein Tippen zeigt ihn groß.</p>
       <h3>Ändern und löschen</h3>
       <p>In der Liste ändert <kbd>✎</kbd> eine Buchung, <kbd>✕</kbd> löscht sie.</p>
+      <h3>Einzelposten vom Kassenbon</h3>
+      <p>Erkennt die Texterkennung nicht nur die Summe, sondern einzelne Zeilen, erscheint darunter
+         eine Liste: <i>Vollmilch 1,29 · Butter 2,49 · Shampoo 3,49</i> – mit Kategorievorschlag.
+         Angehakte Zeilen werden als <b>einzelne Ausgaben</b> gebucht statt als ein Gesamtbetrag.
+         So siehst du später, was das Geld wirklich war.</p>
+      <p class="hint">Summen, Rückgeld, Mehrwertsteuer und Kartenzeilen lässt die Erkennung aus,
+         Stückzahlen wie „2 x" und Steuerkennzeichen räumt sie aus dem Namen. Kassenbons sind
+         wild formatiert – prüf die Liste, bevor du buchst. Willst du es einfach halten, ignorier
+         sie und buch wie bisher die Summe.</p>
+
+      <h3>Was kostet das an Arbeitszeit?</h3>
+      <p>Der Schalter <b>„Preise auch in Arbeitszeit zeigen"</b> braucht nur deine Wochenstunden.
+         Aus Einkommen und Stunden ergibt sich dein Stundensatz, und jeder Betrag bekommt eine
+         zweite Zahl: <i>Jacke 149,00 € — ≈ 8,6 h</i>. Beim Eintippen eines Betrags steht der
+         Hinweis direkt unter dem Feld.</p>
+      <p>Klingt nach Spielerei, wirkt aber: Geld ist abstrakt, Zeit nicht.</p>
+
       <h3>Tagesbudget (freiwillig)</h3>
       <p>Schalter „Tagespauschal-Budget anzeigen": Du gibst einen Tagessatz an, die App rechnet
          ihn auf den Monat hoch und sagt, wie viel noch übrig oder wie viel überzogen ist.</p>
@@ -222,6 +239,17 @@ td:first-child{white-space:nowrap;font-weight:600}
          dem Konto. Nur geparkte Posten ohne Haken bleiben außen vor.</p>
       <p>Halte den Kontostand hin und wieder aktuell. Liegt er länger zurück, zieht die App die
          seither eingetragenen Ausgaben ab und weist unter der Kurve darauf hin.</p>
+
+      <h3>Kassensturz</h3>
+      <p>Genau davon lebt die zweite Funktion: <b>Trägst du einen neuen Kontostand ein, vergleicht
+         die App ihn mit dem, was er nach ihren Zahlen sein müsste.</b> Die Differenz ist das, was
+         du vergessen hast zu buchen:</p>
+      <p class="hint"><i>„Seit dem 12.08. fehlen 63,40 € gegenüber dem, was erfasst ist."</i>
+         → <b>Als Ausgabe nachbuchen</b> legt sie als „Sonstiges" an, <b>Passt schon</b> blendet
+         den Hinweis aus.</p>
+      <p>Ist mehr da als erwartet, sagt die App das auch – dann fehlt vermutlich eine Einnahme.
+         Ohne diesen Abgleich driftet jede Erfassung nach ein paar Monaten still ab; mit ihm
+         korrigiert sie sich selbst.</p>
     </div>
   </section>
 
@@ -238,6 +266,15 @@ td:first-child{white-space:nowrap;font-weight:600}
       <h3>Zwischen Handy und Rechner</h3>
       <p>Beide führen getrennte Stände. Der Weg hinüber: exportieren, Datei übertragen, dort
          importieren.</p>
+      <h3>Fälligkeiten in den Kalender</h3>
+      <p><kbd>📅 Fälligkeiten als Kalender</kbd> erzeugt eine Datei mit allen Fälligkeiten der
+         nächsten zwölf Monate – jede mit einem <b>Wecker sieben Tage vorher</b>. Auf dem iPhone
+         antippen, in den Kalender übernehmen, fertig. Damit erinnert dich das Gerät, das du
+         ohnehin ansiehst; die App selbst kann keine Mitteilungen schicken.</p>
+      <p>Standardmäßig kommen nur die Posten hinein, die <b>nicht</b> jeden Monat fällig sind –
+         also genau die, die man vergisst. Der Haken darunter nimmt auch die monatlichen mit.
+         Geparkte Posten bleiben außen vor.</p>
+
       <h3>PDF-Bericht</h3>
       <p><kbd>Bericht als PDF</kbd> oben rechts ist zum Anschauen, Ausdrucken und Weitergeben.
          Zurücklesen lässt sich daraus nichts – dafür ist das Backup da.</p>

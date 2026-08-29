@@ -106,6 +106,11 @@ input[type=number]{-moz-appearance:textfield}
 .fcline{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px}
 .fclab{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--slate500);flex:1 1 130px}
 .fcres{margin-top:6px}
+.sturz{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--vary50);box-shadow:0 0 0 1px var(--vary100)}
+.sturz.hidden{display:none}
+.sturztext{font-size:14px;color:var(--ink);margin:0;line-height:1.5}
+.sturzbtn{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.sturzbtn .link-reset{color:var(--slate500)}
 .fchint{font-size:14px;color:var(--slate500);margin:10px 0 0;line-height:1.5}
 .fckern{font-size:15px;margin:14px 0 0;line-height:1.55}
 .fckern b{font-weight:600}
@@ -298,6 +303,14 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .scanprev.hidden{display:none}
 .scanthumb{width:56px;height:56px;object-fit:cover;border-radius:8px;box-shadow:0 0 0 1px var(--slate200)}
 .scanstatus{font-size:13px;color:var(--slate500);margin:10px 0 0;min-height:18px}
+.zeithint{font-size:13px;color:var(--vary700);margin:8px 0 0;min-height:0}
+.zeit{font-size:11px;color:var(--slate400);white-space:nowrap}
+.bposten{margin-top:12px;background:#fff;border-radius:12px;box-shadow:0 0 0 1px var(--slate200);overflow:hidden}
+.bposten.hidden{display:none}
+.bprow{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--slate100);flex-wrap:wrap}
+.bpcheck{flex:none;width:17px;height:17px;accent-color:var(--vary600)}
+.bpname{flex:1 1 120px;min-width:0}
+.bpcat{flex:1 1 130px;min-width:0;font-size:13px}
 .fixscan{padding:12px 16px;border-top:1px solid var(--fixed100);background:rgba(238,242,255,.25)}
 .fixscan .scanstatus{margin:8px 0 0}
 .fixfound{margin-top:10px;background:#fff;border-radius:12px;box-shadow:0 0 0 1px var(--slate200);overflow:hidden}
@@ -398,6 +411,13 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           <label class="fclab">Geld kommt am<select id="incomeDay" class="inp fdinput"></select></label>
         </div>
         <div id="fcResult" class="fcres"></div>
+        <div id="sturzBox" class="sturz hidden">
+          <p class="sturztext" id="sturzText"></p>
+          <div class="sturzbtn">
+            <button id="sturzBuchen" class="btn-dark" type="button">Als Ausgabe nachbuchen</button>
+            <button id="sturzWeg" class="link-reset" type="button">Passt schon</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -452,7 +472,17 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           <img id="scanThumb" class="scanthumb" alt="Beleg">
           <button id="scanRemove" class="link-reset" type="button">Beleg entfernen</button>
         </div>
+        <p id="zeitHinweis" class="zeithint"></p>
         <p id="scanStatus" class="scanstatus"></p>
+        <div id="belegPosten" class="bposten hidden">
+          <p class="ffhead" id="bpHead">Einzelposten vom Beleg</p>
+          <div id="bpListe"></div>
+          <div class="ffactions">
+            <button id="bpBuchen" class="btn-dark" type="button">Ausgewählte einzeln buchen</button>
+            <button id="bpAlle" class="btn-outline" type="button">Alle auswählen</button>
+            <button id="bpWeg" class="link-reset" type="button">Verwerfen</button>
+          </div>
+        </div>
       </div>
 
       <div class="panel panel-pad">
@@ -464,6 +494,15 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
             <span class="lbl">€</span>
           </div>
           <p class="budget-info num" id="budgetInfo"></p>
+        </div>
+        <label class="toggle" style="margin-top:14px"><input id="zeitToggle" type="checkbox"><span>Preise auch in Arbeitszeit zeigen</span></label>
+        <div id="zeitPanel" class="budget-panel hidden">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="lbl">Wochenstunden</span>
+            <input id="wochenstunden" class="inp inp--v w-amt num" type="number" step="0.5" inputmode="decimal" placeholder="40">
+            <span class="lbl">h</span>
+          </div>
+          <p class="budget-info num" id="zeitInfo"></p>
         </div>
       </div>
 
@@ -565,6 +604,11 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           <input id="importFile" type="file" accept="application/json,.json" style="display:none">
         </div>
         <p id="backupStatus" class="backup-status"></p>
+        <div class="btnrow" style="margin-top:14px">
+          <button id="icsBtn" class="btn-outline" type="button">📅 Fälligkeiten als Kalender</button>
+        </div>
+        <label class="toggle" style="margin-top:10px"><input id="icsAlle" type="checkbox"><span>auch monatliche Posten aufnehmen</span></label>
+        <p class="backup-note">Erzeugt eine Kalenderdatei mit den Fälligkeiten der nächsten zwölf Monate, jede mit einem Wecker <b>sieben Tage vorher</b>. Auf dem iPhone antippen und in den Kalender übernehmen.</p>
         <p class="backup-note">Sichert alle Monate als Datei. Praktisch, falls dein Browser den lokalen Speicher leert – die Datei kannst du jederzeit wieder einlesen.</p>
       </div>
     </section>
@@ -711,6 +755,13 @@ function normalisiereStamm(d) {
   if (typeof d.balanceDate !== "string") d.balanceDate = "";
   const tag = Number(d.incomeDay);
   d.incomeDay = tag >= 1 && tag <= 28 ? Math.round(tag) : 1;
+  if (!d.balanceLetzt || typeof d.balanceLetzt.betrag !== "number" || !d.balanceLetzt.datum) {
+    d.balanceLetzt = d.balance !== null && d.balanceDate ? { betrag: d.balance, datum: d.balanceDate } : null;
+  }
+  if (!d.sturz || typeof d.sturz.differenz !== "number") d.sturz = null;
+  const std = Number(d.wochenstunden);
+  d.wochenstunden = std > 0 && std <= 100 ? std : 40;
+  d.zeitAn = !!d.zeitAn;
   return d;
 }
 function normalisiereMonate(d) {
@@ -761,6 +812,8 @@ function render() {
   renderVariable();
   renderDashboard();
   renderVorschau();
+  renderSturz();
+  renderZeit();
   renderStats();
   renderEval();
   applyTab(data.activeTab);
@@ -953,7 +1006,7 @@ function renderVariable() {
         '<span class="ecat-tag">' + escapeHtml(cat) + '</span>' +
       '</div>' +
       (e.receipt ? '<img class="ereceipt" src="' + e.receipt + '" alt="Beleg">' : '') +
-      '<div class="eamt num">' + fmt(e.amount) + '</div>' +
+      '<div class="eamt num">' + fmt(e.amount) + zeitZusatz(e.amount) + '</div>' +
       '<button class="edit" data-editexp="' + e.id + '" aria-label="Bearbeiten">✎</button>' +
       '<button class="del" data-delexp="' + e.id + '" aria-label="Ausgabe löschen">✕</button>';
     list.appendChild(row);
@@ -1151,7 +1204,7 @@ document.getElementById("expDesc").addEventListener("keydown", e => { if (e.key 
 document.getElementById("expAmount").addEventListener("keydown", e => { if (e.key === "Enter") addExpense(); });
 document.getElementById("scanBtn").addEventListener("click", () => document.getElementById("scanFile").click());
 document.getElementById("scanFile").addEventListener("change", e => { const f = e.target.files[0]; if (f) handleReceiptFile(f); e.target.value = ""; });
-document.getElementById("scanRemove").addEventListener("click", () => { pendingReceipt = null; hideReceiptPreview(); setScanStatus(""); });
+document.getElementById("scanRemove").addEventListener("click", () => { pendingReceipt = null; hideReceiptPreview(); versteckeBelegPosten(); setScanStatus(""); });
 document.getElementById("lightbox").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
 document.getElementById("editSave").addEventListener("click", saveEdit);
 document.getElementById("editCancel").addEventListener("click", closeEdit);
@@ -1325,6 +1378,9 @@ async function handleReceiptFile(file) {
     if (parsed.amount != null) { document.getElementById("expAmount").value = String(parsed.amount); msg += " Betrag: " + fmt(parsed.amount) + "."; }
     if (parsed.date) { document.getElementById("expDate").value = parsed.date; msg += " Datum erkannt."; }
     if (parsed.amount == null && !parsed.date) msg += " Betrag/Datum nicht automatisch erkannt.";
+    const posten = parseReceiptItems(result && result.data && result.data.text);
+    zeigeBelegPosten(posten);
+    if (posten.length) msg += " " + posten.length + " Einzelposten gefunden – unten wählbar.";
     setScanStatus(msg + " Bitte prüfen.");
   } catch (e) { setScanStatus("Beleg konnte nicht verarbeitet werden.", true); }
 }
@@ -1734,13 +1790,313 @@ function renderAuffaellig() {
     (a.laufend ? ', jeweils nur bis zum ' + a.stichtag + '. des Monats – sonst wäre der laufende Monat im Nachteil' : '') + '.</p>';
 }
 
+// --- Preise in Arbeitszeit ---
+const WOCHEN_JE_MONAT = 13 / 3;                    // 52 Wochen auf 12 Monate
+
+function stundenlohn() {
+  const std = (Number(data.wochenstunden) || 0) * WOCHEN_JE_MONAT;
+  const ein = Number(cur().income) || 0;
+  return std > 0 && ein > 0 ? ein / std : 0;
+}
+function inStunden(betrag) {
+  const lohn = stundenlohn();
+  return lohn > 0 ? (Number(betrag) || 0) / lohn : null;
+}
+function zeitText(betrag) {
+  const h = inStunden(betrag);
+  if (h === null || !isFinite(h) || h <= 0) return "";
+  if (h < 1) return Math.round(h * 60) + " min";
+  if (h < 10) return h.toFixed(1).replace(".", ",") + " h";
+  return Math.round(h) + " h";
+}
+function zeitZusatz(betrag) {
+  if (!data.zeitAn) return "";
+  const t = zeitText(betrag);
+  return t ? '<span class="zeit">≈ ' + t + "</span>" : "";
+}
+
+function renderZeit() {
+  const toggle = document.getElementById("zeitToggle");
+  if (!toggle) return;
+  toggle.checked = !!data.zeitAn;
+  document.getElementById("zeitPanel").classList.toggle("hidden", !data.zeitAn);
+  const feld = document.getElementById("wochenstunden");
+  if (document.activeElement !== feld) feld.value = data.wochenstunden || 40;
+  const lohn = stundenlohn();
+  document.getElementById("zeitInfo").textContent = data.zeitAn
+    ? (lohn > 0
+        ? "Rechnet mit " + fmt(lohn) + " je Stunde (Einkommen ÷ " + ((Number(data.wochenstunden) || 0) * WOCHEN_JE_MONAT).toFixed(0) + " Monatsstunden)."
+        : "Dafür braucht es ein Einkommen und Wochenstunden über null.")
+    : "";
+  zeigeZeitHinweis();
+}
+
+function zeigeZeitHinweis() {
+  const el = document.getElementById("zeitHinweis");
+  if (!el) return;
+  const betrag = parseFloat(document.getElementById("expAmount").value);
+  const t = data.zeitAn && betrag > 0 ? zeitText(betrag) : "";
+  el.textContent = t ? "Das sind rund " + t + " Arbeitszeit." : "";
+}
+
+// --- Beleg bis auf die Zeile lesen ---
+const KAT_WOERTER = {
+  "Lebensmittel": ["brot","milch","butter","kaese","käse","joghurt","obst","apfel","banane","gemuese","gemüse","salat","fleisch","wurst","haehnchen","hähnchen","reis","nudel","pasta","mehl","zucker","kaffee","tee","wasser","saft","bier","wein","eier","muesli","müsli","schoko","chips","tomate","gurke","kartoffel","zwiebel","sahne","quark"],
+  "Haushalt": ["spuel","spül","wasch","putz","reiniger","muellbeutel","müllbeutel","toiletten","seife","shampoo","zahnpasta","batterie","gluehbirne","glühbirne","schwamm"],
+  "Tanken / Auto": ["super","diesel","benzin","e10","e5","adblue","scheibenwasch","maut","parken"],
+  "Gesundheit": ["apotheke","tablette","salbe","vitamin","pflaster","medikament"],
+  "Kleidung": ["shirt","hose","jacke","schuh","socken","pullover","kleid"],
+};
+function katVorschlag(name) {
+  const n = String(name).toLowerCase();
+  for (const kat in KAT_WOERTER) if (KAT_WOERTER[kat].some(w => n.includes(w))) return kat;
+  return null;
+}
+
+// Reine, testbare Erkennung der Einzelposten eines Kassenbons
+function parseReceiptItems(text) {
+  if (!text) return [];
+  const SKIP = /(summe|gesamt|total|zu\s*zahlen|endbetrag|geg(eben)?\b|rueckgeld|rückgeld|wechselgeld|\bbar\b|karte|\bec\b|girocard|mwst|ust|steuer|netto|brutto|zwischensumme|rabatt|kundennr|beleg|datum|uhrzeit|tel\.|filiale|vielen dank|\bbon\b)/i;
+  const GELD = /-?\d{1,3}(?:[.\s]\d{3})*[.,]\d{2}|-?\d+[.,]\d{2}/g;
+  const zahl = str => {
+    let t = String(str).replace(/\s/g, "");
+    if (t.includes(".") && t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+    else if (t.includes(",")) t = t.replace(",", ".");
+    const n = parseFloat(t);
+    return isNaN(n) ? null : n;
+  };
+  const treffer = [];
+  String(text).split(/\r?\n/).forEach(roh => {
+    const zeile = roh.trim();
+    if (!zeile || SKIP.test(zeile)) return;
+    const funde = [...zeile.matchAll(GELD)];
+    if (!funde.length) return;
+    const letzter = funde[funde.length - 1];
+    const betrag = zahl(letzter[0]);
+    if (betrag === null || betrag <= 0 || betrag > 2000) return;
+    let name = zeile.slice(0, letzter.index)
+      .replace(/^\s*\d+\s*[xX*×]\s*/, " ")                  // Stueckzahl am Zeilenanfang
+      .replace(/\b\d+[,.]\d{1,3}\s*(kg|g|l|ml)\b/gi, " ")   // Gewichtsangaben
+      .replace(/[*€|]/g, " ")
+      .replace(/\s+[\d.,]+\s*$/, " ")                       // Einzelpreis vor dem Gesamtpreis
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[\s.,;:/–-]+|[\s.,;:/–-]+$/g, "")
+      .replace(/\s+[ABab]$/, "")
+      .trim();
+    if (name.length < 2 || !/[A-Za-zÄÖÜäöüß]{2}/.test(name)) return;
+    if (name.length > 34) name = name.slice(0, 34).trim();
+    treffer.push({ name, betrag: Math.round(betrag * 100) / 100, kat: katVorschlag(name) });
+  });
+  return treffer.slice(0, 30);
+}
+
+function zeigeBelegPosten(posten) {
+  const box = document.getElementById("belegPosten"), liste = document.getElementById("bpListe");
+  if (!posten.length) { box.classList.add("hidden"); liste.innerHTML = ""; return; }
+  const summe = posten.reduce((s, p) => s + p.betrag, 0);
+  document.getElementById("bpHead").textContent =
+    posten.length + " Einzelposten erkannt, zusammen " + fmt(summe) + " – anhaken, was einzeln gebucht werden soll";
+  const katOptionen = CATEGORIES.map(c => '<option value="' + c.name + '">' + c.name + "</option>").join("");
+  liste.innerHTML = posten.map((p, i) =>
+    '<div class="bprow">' +
+      '<input type="checkbox" class="bpcheck" data-i="' + i + '">' +
+      '<input type="text" class="inp bpname" data-i="' + i + '" value="' + escapeAttr(p.name) + '">' +
+      '<div class="famt"><input type="number" step="0.01" inputmode="decimal" class="inp w-amt num bpamt" data-i="' + i + '" value="' + p.betrag + '"><span class="cur">€</span></div>' +
+      '<select class="inp bpcat" data-i="' + i + '">' + katOptionen + "</select>" +
+    "</div>").join("");
+  posten.forEach((p, i) => {
+    const sel = liste.querySelector('.bpcat[data-i="' + i + '"]');
+    if (sel) sel.value = p.kat || data.lastCategory || CATEGORIES[0].name;
+  });
+  box.classList.remove("hidden");
+}
+function versteckeBelegPosten() {
+  document.getElementById("belegPosten").classList.add("hidden");
+  document.getElementById("bpListe").innerHTML = "";
+}
+
+function bucheBelegPosten() {
+  const liste = document.getElementById("bpListe");
+  const datum = document.getElementById("expDate").value || todayISO();
+  let anzahl = 0, summe = 0;
+  liste.querySelectorAll(".bpcheck").forEach(cb => {
+    if (!cb.checked) return;
+    const i = cb.dataset.i;
+    const name = liste.querySelector('.bpname[data-i="' + i + '"]').value.trim();
+    const betrag = parseFloat(liste.querySelector('.bpamt[data-i="' + i + '"]').value);
+    const kat = liste.querySelector('.bpcat[data-i="' + i + '"]').value;
+    if (!betrag || betrag <= 0) return;
+    cur().variable.push({ id: uid(), date: datum, amount: betrag, description: name, category: kat });
+    anzahl++; summe += betrag;
+  });
+  if (!anzahl) { setScanStatus("Nichts angehakt – es wurde nichts gebucht.", true); return; }
+  pendingReceipt = null; hideReceiptPreview();
+  versteckeBelegPosten();
+  render(); resetExpenseForm();
+  setScanStatus(anzahl + " Posten gebucht, zusammen " + fmt(summe) + ".");
+}
+
+document.getElementById("zeitToggle").addEventListener("change", e => { data.zeitAn = e.target.checked; render(); });
+document.getElementById("wochenstunden").addEventListener("input", e => {
+  const v = parseFloat(e.target.value);
+  data.wochenstunden = v > 0 && v <= 100 ? v : 40;
+  renderZeit(); renderVariable(); save();
+});
+document.getElementById("expAmount").addEventListener("input", zeigeZeitHinweis);
+document.getElementById("bpBuchen").addEventListener("click", bucheBelegPosten);
+document.getElementById("bpAlle").addEventListener("click", () => {
+  const boxen = [...document.querySelectorAll("#bpListe .bpcheck")];
+  const alleAn = boxen.every(b => b.checked);
+  boxen.forEach(b => { b.checked = !alleAn; });
+  document.getElementById("bpAlle").textContent = alleAn ? "Alle auswählen" : "Alle abwählen";
+});
+document.getElementById("bpWeg").addEventListener("click", () => { versteckeBelegPosten(); setScanStatus(""); });
+
+// --- Faelligkeiten als Kalenderdatei (.ics), Wecker sieben Tage vorher ---
+function icsText(zeile) {                          // Pflichtzeichen schuetzen
+  return String(zeile).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+function icsFalten(zeile) {                        // Zeilen ueber 74 Zeichen muessen umbrochen werden
+  if (zeile.length <= 74) return zeile;
+  let rest = zeile, teile = [rest.slice(0, 74)];
+  rest = rest.slice(74);
+  while (rest.length > 73) { teile.push(" " + rest.slice(0, 73)); rest = rest.slice(73); }
+  if (rest) teile.push(" " + rest);
+  return teile.join("\r\n");
+}
+
+function faelligkeitenICS(auchMonatlich) {
+  const heute = new Date(), start = monthKey(heute);
+  const stempel = isoVon(heute).replace(/-/g, "") + "T090000Z";
+  const zeilen = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Monatsfinanzen//DE", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"];
+  let anzahl = 0;
+
+  for (let i = 0; i < 12; i++) {
+    const key = monatPlus(start, i);
+    const monat = monatFuerVorschau(key);
+    if (!monat) continue;
+    monat.fixed.forEach(f => {
+      if (!(f.avg || f.only)) return;                       // geparkte Posten nicht
+      if (!istFaellig(f, key)) return;
+      if (!auchMonatlich && rhythmus(f).n === 1) return;
+      const betrag = Number(f.amount) || 0;
+      if (betrag <= 0) return;
+      const tag = Math.min(f.due ? (Number(f.due.slice(8, 10)) || 1) : 1, daysInMonth(key));
+      const datum = key.replace("-", "") + String(tag).padStart(2, "0");
+      const naechster = new Date(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, tag + 1);
+      const titel = f.name + " " + fmt(betrag);
+      zeilen.push("BEGIN:VEVENT",
+        "UID:" + f.id + "-" + datum + "@monatsfinanzen",
+        "DTSTAMP:" + stempel,
+        "DTSTART;VALUE=DATE:" + datum,
+        "DTEND;VALUE=DATE:" + isoVon(naechster).replace(/-/g, ""),
+        icsFalten("SUMMARY:" + icsText(titel)),
+        icsFalten("DESCRIPTION:" + icsText("Fällige Zahlung – " + rhythmus(f).lang + ". Aus Monatsfinanzen.")),
+        "TRANSP:TRANSPARENT",
+        "BEGIN:VALARM", "TRIGGER:-P7D", "ACTION:DISPLAY",
+        icsFalten("DESCRIPTION:" + icsText(titel + " in 7 Tagen")),
+        "END:VALARM", "END:VEVENT");
+      anzahl++;
+    });
+  }
+  zeilen.push("END:VCALENDAR");
+  return { text: zeilen.join("\r\n") + "\r\n", anzahl };
+}
+
+function exportICS() {
+  try {
+    const auchMonatlich = document.getElementById("icsAlle").checked;
+    const k = faelligkeitenICS(auchMonatlich);
+    if (!k.anzahl) {
+      setBackupStatus(auchMonatlich
+        ? "Keine Fälligkeiten gefunden – trag zuerst Fixkosten ein."
+        : "Keine nicht-monatlichen Fälligkeiten gefunden. Setz den Haken, um auch monatliche Posten aufzunehmen.", true);
+      return;
+    }
+    const blob = new Blob([k.text], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "faelligkeiten_" + todayISO() + ".ics";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setBackupStatus(k.anzahl + (k.anzahl === 1 ? " Termin" : " Termine") + " erzeugt, Wecker jeweils sieben Tage vorher.");
+  } catch (e) { setBackupStatus("Kalenderdatei konnte nicht erzeugt werden.", true); }
+}
+
+// --- Kassensturz: was der Kontostand sein muesste, verglichen mit dem, was er ist ---
+function erwarteterStand(vonISO, vonBetrag, bisISO) {
+  let saldo = Number(vonBetrag) || 0;
+  const tage = tageDiff(vonISO, bisISO);
+  if (tage <= 0) return saldo;
+  const echt = echteAusgabenProTag(vonISO, bisISO);
+  const d = new Date(vonISO + "T12:00:00");
+  for (let i = 1; i <= tage; i++) {
+    d.setDate(d.getDate() + 1);
+    const iso = isoVon(d), key = iso.slice(0, 7), tag = d.getDate();
+    if (tag === (data.incomeDay || 1)) saldo += Number(monatFuerVorschau(key).income) || 0;
+    fixZahlungen(key).forEach(z => { if (z.tag === tag) saldo -= z.betrag; });
+    saldo -= echt[iso] || 0;                       // nur wirklich erfasste Ausgaben
+  }
+  return saldo;
+}
+
+// Wird beim Bestaetigen eines neuen Kontostands aufgerufen
+function pruefeKassensturz() {
+  const letzt = data.balanceLetzt;
+  const jetztBetrag = data.balance, jetztDatum = data.balanceDate;
+  if (jetztBetrag === null || !jetztDatum) return;
+  if (!letzt || !letzt.datum || jetztDatum <= letzt.datum) {          // gleicher Tag: nur eine Korrektur
+    data.balanceLetzt = { betrag: jetztBetrag, datum: jetztDatum };
+    return;
+  }
+  const erwartet = erwarteterStand(letzt.datum, letzt.betrag, jetztDatum);
+  const differenz = jetztBetrag - erwartet;
+  data.sturz = Math.abs(differenz) >= 1 ? { differenz, seit: letzt.datum, bis: jetztDatum } : null;
+  data.balanceLetzt = { betrag: jetztBetrag, datum: jetztDatum };
+  renderSturz();
+}
+
+function renderSturz() {
+  const box = document.getElementById("sturzBox");
+  if (!box) return;
+  const s = data.sturz;
+  if (!s) { box.classList.add("hidden"); return; }
+  const tag = iso => dateFmt.format(new Date(iso + "T12:00:00")).replace(/\.\d{4}$/, ".");
+  const fehlt = s.differenz < 0;
+  document.getElementById("sturzText").innerHTML = fehlt
+    ? "Seit dem " + tag(s.seit) + " <b>fehlen " + fmt(-s.differenz) + "</b> gegenüber dem, was erfasst ist. Vermutlich nicht gebuchte Ausgaben."
+    : "Seit dem " + tag(s.seit) + " sind <b>" + fmt(s.differenz) + " mehr</b> da als erfasst. Vielleicht eine Einnahme, die nicht eingetragen ist.";
+  document.getElementById("sturzBuchen").style.display = fehlt ? "" : "none";
+  box.classList.remove("hidden");
+}
+
+function sturzNachbuchen() {
+  const s = data.sturz;
+  if (!s || s.differenz >= 0) return;
+  const key = s.bis.slice(0, 7);
+  ensureMonth(key);
+  data.months[key].variable.push({
+    id: uid(), date: s.bis, amount: Math.round(-s.differenz * 100) / 100,
+    description: "Nicht erfasst (Kassensturz)", category: "Sonstiges",
+  });
+  data.sturz = null;
+  render();
+}
+
 document.getElementById("balInput").addEventListener("input", e => {
   const v = parseFloat(e.target.value);
   data.balance = e.target.value === "" || isNaN(v) ? null : v;
   if (!data.balanceDate) data.balanceDate = todayISO();
   renderVorschau(); save();
 });
-document.getElementById("balDate").addEventListener("change", e => { data.balanceDate = e.target.value || todayISO(); renderVorschau(); save(); });
+document.getElementById("balInput").addEventListener("change", () => { pruefeKassensturz(); save(); });
+document.getElementById("balDate").addEventListener("change", e => {
+  data.balanceDate = e.target.value || todayISO();
+  pruefeKassensturz(); renderVorschau(); save();
+});
+document.getElementById("icsBtn").addEventListener("click", exportICS);
+document.getElementById("sturzBuchen").addEventListener("click", sturzNachbuchen);
+document.getElementById("sturzWeg").addEventListener("click", () => { data.sturz = null; renderSturz(); save(); });
 document.getElementById("incomeDay").addEventListener("change", e => { data.incomeDay = Number(e.target.value) || 1; renderVorschau(); save(); });
 
 // --- Backup ---

@@ -37,6 +37,11 @@ Kein Server, kein Konto, keine Installation.
 - Auffällig: Kategorien, die um mehr als 15 € und ein Viertel vom eigenen Schnitt der
   letzten sechs Monate abweichen (im laufenden Monat stichtagsgenau verglichen)
 - Rücklagen: was für verteilt gerechnete Posten bis heute beiseitegelegt sein müsste
+- Kassensturz: ein neu eingetragener Kontostand wird gegen den rechnerischen verglichen;
+  die Differenz lässt sich als vergessene Ausgabe nachbuchen
+- Fälligkeiten als Kalenderdatei (.ics) mit Wecker sieben Tage vorher
+- Einzelposten vom Kassenbon einzeln buchen, mit Kategorievorschlag
+- Beträge wahlweise zusätzlich in Arbeitszeit
 - Bericht als PDF exportieren
 
 ## Starten
