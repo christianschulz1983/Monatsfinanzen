@@ -302,7 +302,19 @@ td:first-child{white-space:nowrap;font-weight:600}
       <h3>Ändern und löschen</h3>
       <p>In der Liste ändert <kbd>✎</kbd> eine Buchung, <kbd>✕</kbd> löscht sie.</p>
       <h3>Den ganzen Monat aus dem Kontoauszug</h3>
-      <p><kbd>📄 Kontoauszug einlesen (Ausgaben)</kbd> dreht die Sache um: Statt jeden Einkauf
+      <h3>Am besten: die CSV deiner Bank</h3>
+      <p>Im Online-Banking gibt es beim Umsatz fast immer <b>„Export als CSV"</b>. Diese Datei liest
+         die App <b>ohne Texterkennung</b> – Datum, Empfänger und Betrag stehen darin als saubere
+         Felder. Das ist nicht „meistens richtig", sondern <b>immer</b> richtig.</p>
+      <p>Die App findet die Kopfzeile selbst, auch wenn davor noch Kontonummer und Zeitraum stehen,
+         kommt mit Semikolon, Komma und Tabulator zurecht, versteht 1.234,56 wie 1234.56 und
+         getrennte Soll-/Haben-Spalten. Eingänge wie Gehalt überspringt sie und sagt, wie viele es
+         waren.</p>
+      <p class="hint">Wenn deine Bank ein Format liefert, das nicht erkannt wird, sagt die App das
+         deutlich – dann schick mir die Kopfzeile und zwei Beispielzeilen.</p>
+
+      <h3>Sonst: PDF, zuletzt Foto</h3>
+      <p><kbd>📄 Kontoauszug einlesen (CSV, PDF, Foto)</kbd> dreht die Sache um: Statt jeden Einkauf
          abends einzutippen, lädst du einmal im Monat den Auszug hoch. Die App zieht die
          Kartenzahlungen und Lastschriften heraus – <b>mit Datum, Betrag und einer geratenen
          Kategorie</b> – und legt sie als Liste zum Anhaken vor.</p>
@@ -318,6 +330,12 @@ td:first-child{white-space:nowrap;font-weight:600}
       <p class="hint">Gehaltseingänge, Gutschriften und Kontostände lässt die Erkennung aus. Jede
          Buchung wird in den Monat gelegt, zu dem ihr Datum gehört – auch wenn der Auszug über
          einen Monatswechsel geht.</p>
+      <p>Muss doch die Texterkennung ran, holt die App inzwischen mehr heraus: Sie liest
+         <b>bis zu fünf Seiten</b> statt nur die erste, bereitet das Bild vorher auf
+         (Graustufen, Kontrast, Schwarzweiß) und sagt der Erkennung, dass eine einspaltige
+         Liste vorliegt. Bei Papier lohnt sich trotzdem der <b>Dokumentenscanner</b> von iOS
+         (Notizen oder Dateien → „Dokument scannen"): Er richtet die Seite gerade und liefert
+         eine PDF – das schlägt jedes freihändige Foto.</p>
 
       <h3>Einzelposten vom Kassenbon</h3>
       <p>Erkennt die Texterkennung nicht nur die Summe, sondern einzelne Zeilen, erscheint darunter
@@ -415,6 +433,19 @@ td:first-child{white-space:nowrap;font-weight:600}
       <p>Alle Zahlen liegen ausschließlich im Speicher dieses Browsers. Nichts wird übertragen –
          und niemand außer dir kommt daran. Die Kehrseite: Ein geleerter Browserspeicher nimmt
          die Erfassung mit.</p>
+      <h3>Wenn Eingaben verschwinden</h3>
+      <p>Die App speichert nach jeder Eingabe – <b>außer der Browser lässt sie nicht</b>. Das passiert
+         in zwei Fällen, und beide meldet sie jetzt mit einem roten Kasten ganz oben:</p>
+      <table>
+        <tr><td>Speicher voll</td><td>Meist von Belegfotos. Der Kasten nennt die belegte Größe und
+            bietet an, die Fotos zu entfernen – die Buchungen bleiben vollständig.</td></tr>
+        <tr><td>Speichern gesperrt</td><td>Privater Modus oder blockierte Website-Daten. Dann geht
+            beim Schließen alles verloren, deshalb: Backup sichern und die App über das Symbol auf
+            dem Home-Bildschirm öffnen.</td></tr>
+      </table>
+      <p>Unter „Daten &amp; Backup" steht außerdem immer, wie viel Platz belegt ist und wie viel
+         davon auf Belegfotos entfällt. Browser geben einer Seite meist rund 5 MB.</p>
+
       <h3>Backup</h3>
       <p>Reiter <b>Statistik</b> → „Daten &amp; Backup" → <kbd>Backup exportieren</kbd> legt alle
          Monate als Datei ab (auf dem iPhone in „Dateien", von dort in iCloud oder per Mail

@@ -64,6 +64,11 @@ input[type=number]{-moz-appearance:textfield}
 .month-input{font-family:'Space Grotesk',sans-serif;font-weight:600;text-align:center;background:#fff;border:none;border-radius:8px;padding:8px 12px;box-shadow:0 0 0 1px var(--slate200);color:var(--ink)}
 .month-input:focus{outline:none;box-shadow:0 0 0 2px var(--fixed500)}
 
+.speicherwarn{background:#fef2f2;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 0 0 1px #fecaca}
+.speicherwarn.hidden{display:none}
+.speicherwarn-text{margin:0;font-size:14px;line-height:1.55;color:#991b1b}
+.speicherwarn-text b{font-weight:600}
+.speicherwarn-btn{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .tabs{display:flex;gap:6px;background:#fff;padding:5px;border-radius:12px;box-shadow:0 0 0 1px var(--slate200);margin-bottom:24px}
 .tab{flex:1;border:none;background:transparent;border-radius:8px;padding:9px 12px;font-size:14px;font-weight:600;color:var(--slate500);transition:background .15s,color .15s}
 .tab.active{background:var(--ink);color:#fff}
@@ -424,6 +429,14 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
     <button id="nextMonth" class="navbtn" aria-label="Folgemonat">›</button>
   </div>
 
+  <div id="speicherWarnung" class="speicherwarn hidden">
+    <p class="speicherwarn-text" id="speicherText"></p>
+    <div class="speicherwarn-btn">
+      <button id="speicherBackup" class="btn-dark" type="button">Backup jetzt sichern</button>
+      <button id="speicherBelege" class="btn-outline" type="button">Belege entfernen</button>
+    </div>
+  </div>
+
   <div class="tabs">
     <button id="tabBtnHeute" class="tab active">Heute</button>
     <button id="tabBtnMonat" class="tab">Monat</button>
@@ -469,8 +482,8 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
         <div class="scanrow">
           <button id="scanBtn" class="btn-outline" type="button">📷 Beleg scannen (Foto / PDF)</button>
           <input id="scanFile" type="file" accept="image/*,application/pdf" style="display:none">
-          <button id="auszugBtn" class="btn-outline" type="button" style="margin-top:8px">📄 Kontoauszug einlesen (Ausgaben)</button>
-          <input id="auszugFile" type="file" accept="image/*,application/pdf" style="display:none">
+          <button id="auszugBtn" class="btn-outline" type="button" style="margin-top:8px">📄 Kontoauszug einlesen (CSV, PDF, Foto)</button>
+          <input id="auszugFile" type="file" accept=".csv,text/csv,text/plain,image/*,application/pdf" style="display:none">
         </div>
         <div id="scanPreview" class="scanprev hidden">
           <img id="scanThumb" class="scanthumb" alt="Beleg">
@@ -756,6 +769,7 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
         </div>
         <label class="toggle" style="margin-top:10px"><input id="icsAlle" type="checkbox"><span>auch monatliche Posten aufnehmen</span></label>
         <p class="backup-note">Erzeugt eine Kalenderdatei mit den Fälligkeiten der nächsten zwölf Monate, jede mit einem Wecker <b>sieben Tage vorher</b>. Auf dem iPhone antippen und in den Kalender übernehmen.</p>
+        <p class="backup-note" id="speicherInfo"></p>
         <p class="backup-note">Sichert alle Monate als Datei. Praktisch, falls dein Browser den lokalen Speicher leert – die Datei kannst du jederzeit wieder einlesen.</p>
       </div>
     </section>
@@ -828,6 +842,7 @@ function shiftMonth(key, delta) { const [y, m] = key.split("-").map(Number); ret
 function monthLabel(key) { const [y, m] = key.split("-").map(Number); return new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1)); }
 function monthShort(key) { const [y, m] = key.split("-").map(Number); return new Intl.DateTimeFormat("de-DE", { month: "short" }).format(new Date(y, m - 1, 1)).replace(".", "") + " " + String(y).slice(2); }
 
+const speicherOk = speicherPruefen();
 let data = load();
 normalisiereStamm(data);
 if (!data.activeTab) data.activeTab = "heute";
@@ -875,7 +890,80 @@ function ensureMonth(key) {
   return data.months[key];
 }
 
-function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); return true; } catch (e) { return false; } }
+let speicherFehler = null;          // null = alles gut, sonst "voll" oder "gesperrt"
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (speicherFehler) { speicherFehler = null; zeigeSpeicherWarnung(); }
+    return true;
+  } catch (e) {
+    // QuotaExceededError heisst je nach Browser anders, deshalb ueber den Namen und den Code
+    const voll = e && (e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED" || e.code === 22);
+    speicherFehler = voll ? "voll" : "gesperrt";
+    zeigeSpeicherWarnung();
+    return false;
+  }
+}
+
+// Wie viel Platz belegen die Daten, und wie viel davon sind Belege?
+function speicherGroesse() {
+  let gesamt = 0, belege = 0;
+  try {
+    const text = JSON.stringify(data);
+    gesamt = text.length;
+    Object.keys(data.months || {}).forEach(k => (data.months[k].variable || []).forEach(e => {
+      if (e.receipt) belege += String(e.receipt).length;
+    }));
+  } catch (e) {}
+  return { gesamt, belege, anzahlBelege: belegAnzahl() };
+}
+function belegAnzahl() {
+  let n = 0;
+  Object.keys(data.months || {}).forEach(k => (data.months[k].variable || []).forEach(e => { if (e.receipt) n++; }));
+  return n;
+}
+function alsGroesse(zeichen) {
+  const kb = zeichen / 1024;
+  return kb < 900 ? Math.round(kb) + " KB" : (kb / 1024).toFixed(1).replace(".", ",") + " MB";
+}
+
+function zeigeSpeicherWarnung() {
+  const box = document.getElementById("speicherWarnung");
+  if (!box) return;
+  if (!speicherFehler) { box.classList.add("hidden"); return; }
+  const g = speicherGroesse();
+  document.getElementById("speicherText").innerHTML = speicherFehler === "voll"
+    ? "<b>Der Speicher dieses Browsers ist voll – deine letzten Eingaben sind nicht gesichert.</b> " +
+      "Belegt sind rund " + alsGroesse(g.gesamt) + ", davon " + alsGroesse(g.belege) + " für " + g.anzahlBelege +
+      " Belegfotos. Sichere zuerst ein Backup, dann entferne die Fotos – die Buchungen bleiben erhalten."
+    : "<b>Dieser Browser speichert nichts – deine Eingaben sind beim Schließen weg.</b> " +
+      "Das passiert im privaten Modus oder wenn Website-Daten gesperrt sind. Sichere jetzt ein Backup und öffne die App " +
+      "danach über das Symbol auf dem Home-Bildschirm, nicht im privaten Fenster.";
+  document.getElementById("speicherBelege").style.display = g.anzahlBelege ? "" : "none";
+  box.classList.remove("hidden");
+}
+
+// Beim Start pruefen, ob der Speicher ueberhaupt funktioniert
+function speicherPruefen() {
+  try {
+    localStorage.setItem("monatsfinanzen_probe", "1");
+    localStorage.removeItem("monatsfinanzen_probe");
+    return true;
+  } catch (e) {
+    speicherFehler = "gesperrt";
+    return false;
+  }
+}
+
+function belegeEntfernen() {
+  const g = speicherGroesse();
+  if (!g.anzahlBelege) return;
+  if (!confirm("Alle " + g.anzahlBelege + " Belegfotos entfernen? Die Buchungen selbst bleiben vollständig erhalten. Das gibt rund " + alsGroesse(g.belege) + " frei.")) return;
+  Object.keys(data.months).forEach(k => data.months[k].variable.forEach(e => { delete e.receipt; }));
+  if (save()) alert("Belegfotos entfernt, " + alsGroesse(g.belege) + " frei. Deine Buchungen sind unverändert.");
+  render();
+}
 function cur() { return data.months[data.currentMonth]; }
 
 // Rhythmus eines Fixpostens: n = Monate zwischen zwei Zahlungen
@@ -984,6 +1072,7 @@ function render() {
   renderEval();
   applyTab(data.activeTab);
   save();
+  zeigeSpeicherWarnung();
 }
 function refreshComputed() { renderDashboard(); renderStats(); renderEval(); }
 function lightUpdate() { refreshComputed(); save(); }
@@ -1212,7 +1301,7 @@ function renderBudget(vari) {
 }
 
 // --- Auswertung ---
-function renderEval() { renderAvailable(); renderCategory(); renderAuffaellig(); renderKinderAuswertung(); renderKm(); renderRuecklagen(); renderAverages(); renderEvalTable(); renderYear(); }
+function renderEval() { renderAvailable(); renderCategory(); renderAuffaellig(); renderKinderAuswertung(); renderKm(); renderSpeicher(); renderRuecklagen(); renderAverages(); renderEvalTable(); renderYear(); }
 
 function renderAvailable() {
   const m = cur();
@@ -1507,19 +1596,53 @@ function scaleToCanvas(src, max) {
 }
 function makeThumb(src, max) { return scaleToCanvas(src, max).toDataURL("image/jpeg", 0.6); }
 
-async function renderPdfFirstPage(file) {
-  if (typeof pdfjsLib === "undefined") return null;
+// Seiten einer PDF als Bilder - nicht nur die erste, sonst geht bei einem
+// mehrseitigen Scan alles ab Seite 2 verloren.
+async function renderPdfSeiten(file, maxSeiten) {
+  if (typeof pdfjsLib === "undefined") return [];
   try {
     pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2 });
-    const cv = document.createElement("canvas");
-    cv.width = viewport.width; cv.height = viewport.height;
-    await page.render({ canvasContext: cv.getContext("2d"), viewport }).promise;
-    return cv;
-  } catch (e) { return null; }
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const seiten = [];
+    for (let i = 1; i <= Math.min(pdf.numPages, maxSeiten || 1); i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2 });
+      const cv = document.createElement("canvas");
+      cv.width = viewport.width; cv.height = viewport.height;
+      await page.render({ canvasContext: cv.getContext("2d"), viewport }).promise;
+      seiten.push(cv);
+    }
+    return seiten;
+  } catch (e) { return []; }
+}
+async function renderPdfFirstPage(file) {
+  const s = await renderPdfSeiten(file, 1);
+  return s.length ? s[0] : null;
+}
+
+// Vorbereitung fuer die Texterkennung: Graustufen, Kontrast, Schwarzweiss.
+// Ein Foto liefert damit deutlich mehr lesbare Zeilen als das Rohbild.
+function fuerErkennungAufbereiten(quelle) {
+  const cv = scaleToCanvas(quelle, 2200);
+  const ctx = cv.getContext("2d");
+  let bild;
+  try { bild = ctx.getImageData(0, 0, cv.width, cv.height); } catch (e) { return cv; }
+  const px = bild.data;
+  const grau = new Uint8ClampedArray(px.length / 4);
+  let summe = 0;
+  for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+    const g = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) | 0;
+    grau[j] = g; summe += g;
+  }
+  // Schwelle aus dem Mittelwert, leicht nach unten versetzt: haelt duennen Bondruck
+  const schwelle = Math.max(60, Math.min(200, (summe / grau.length) * 0.86));
+  for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+    const wert = grau[j] < schwelle ? 0 : 255;
+    px[i] = px[i + 1] = px[i + 2] = wert;
+    px[i + 3] = 255;
+  }
+  ctx.putImageData(bild, 0, 0);
+  return cv;
 }
 
 // Reine, testbare Erkennung von Betrag und Datum aus OCR-Text
@@ -1553,10 +1676,10 @@ async function handleReceiptFile(file) {
     if (file.type === "application/pdf") {
       const cv = await renderPdfFirstPage(file);
       if (!cv) { setScanStatus("PDF konnte nicht gelesen werden (Internetverbindung nötig?).", true); return; }
-      ocrSource = cv; thumb = makeThumb(cv, 480);
+      ocrSource = fuerErkennungAufbereiten(cv); thumb = makeThumb(cv, 480);
     } else {
       const img = await loadImage(file);
-      ocrSource = scaleToCanvas(img, 1600); thumb = makeThumb(img, 480);
+      ocrSource = fuerErkennungAufbereiten(img); thumb = makeThumb(img, 480);
     }
     pendingReceipt = { thumb }; showReceiptPreview(thumb);
     if (typeof Tesseract === "undefined") { setScanStatus("Beleg angehängt. Texterkennung nicht verfügbar (Internet nötig) – Betrag/Datum bitte von Hand eintragen.", true); return; }
@@ -1608,8 +1731,22 @@ async function pdfText(file, maxSeiten) {
 
 async function ocrText(quelle) {
   if (typeof Tesseract === "undefined") return null;
-  const r = await Tesseract.recognize(quelle, "deu");
+  // PSM 6: zusammenhaengender Block in einer Spalte - so sind Bons und Auszuege gebaut.
+  // Ohne diese Angabe raet Tesseract die Struktur und zerlegt Zeilen.
+  const r = await Tesseract.recognize(quelle, "deu", { tessedit_pageseg_mode: "6" });
   return r && r.data ? r.data.text : "";
+}
+
+// Mehrere Seiten nacheinander erkennen und den Text zusammenhaengen
+async function ocrSeiten(seiten, melde) {
+  if (typeof Tesseract === "undefined") return null;
+  let text = "";
+  for (let i = 0; i < seiten.length; i++) {
+    if (melde) melde("Texterkennung: Seite " + (i + 1) + " von " + seiten.length + " …");
+    const t = await ocrText(fuerErkennungAufbereiten(seiten[i]));
+    text += (t || "") + "\n";
+  }
+  return text;
 }
 
 // Reine, testbare Erkennung wiederkehrender Posten aus Text
@@ -1703,14 +1840,14 @@ async function handleFixedFile(file) {
       text = await pdfText(file, 5);
       if (!text || text.replace(/\s/g, "").length < 40) {           // Scan ohne Textebene
         setFixStatus("Kein Text in der PDF – Texterkennung läuft, das dauert einen Moment.");
-        const cv = await renderPdfFirstPage(file);
-        if (!cv) { setFixStatus("PDF konnte nicht gelesen werden (Internetverbindung nötig?).", true); return; }
-        text = await ocrText(cv);
+        const seiten = await renderPdfSeiten(file, 5);
+        if (!seiten.length) { setFixStatus("PDF konnte nicht gelesen werden (Internetverbindung nötig?).", true); return; }
+        text = await ocrSeiten(seiten, setFixStatus);
       }
     } else {
       const img = await loadImage(file);
       setFixStatus("Text wird erkannt … das dauert einen Moment.");
-      text = await ocrText(scaleToCanvas(img, 1600));
+      text = await ocrText(fuerErkennungAufbereiten(img));
     }
     if (text == null) { setFixStatus("Texterkennung nicht verfügbar (Internet nötig).", true); return; }
     const funde = parseFixedItems(text);
@@ -2027,6 +2164,137 @@ function merkeHaendler(name, kategorie) {
   data.haendler[key] = kategorie;
 }
 
+// --- CSV vom Online-Banking: exakt statt geraten ---
+function csvTrenner(kopf) {
+  const kandidaten = [";", "\t", ","];
+  let bester = ";", meiste = 0;
+  kandidaten.forEach(t => {
+    const n = kopf.split(t).length;
+    if (n > meiste) { meiste = n; bester = t; }
+  });
+  return bester;
+}
+
+// Eine CSV-Zeile in Felder zerlegen, Anfuehrungszeichen beachtet
+function csvZeile(zeile, trenner) {
+  const felder = [];
+  let feld = "", inAnf = false;
+  for (let i = 0; i < zeile.length; i++) {
+    const z = zeile[i];
+    if (z === '"') {
+      if (inAnf && zeile[i + 1] === '"') { feld += '"'; i++; }
+      else inAnf = !inAnf;
+    } else if (z === trenner && !inAnf) { felder.push(feld); feld = ""; }
+    else feld += z;
+  }
+  felder.push(feld);
+  return felder.map(f => f.trim());
+}
+
+function csvZahl(text) {
+  let t = String(text || "").replace(/[^\d,.\-+]/g, "").trim();
+  if (!t) return null;
+  const komma = t.lastIndexOf(","), punkt = t.lastIndexOf(".");
+  if (komma > -1 && punkt > -1) {
+    // Das hintere Zeichen ist das Dezimaltrennzeichen
+    t = komma > punkt ? t.replace(/\./g, "").replace(",", ".") : t.replace(/,/g, "");
+  } else if (komma > -1) {
+    t = t.split(",").length === 2 && t.length - komma <= 3 ? t.replace(",", ".") : t.replace(/,/g, "");
+  }
+  const n = parseFloat(t);
+  return isNaN(n) ? null : n;
+}
+
+function csvDatum(text, bezugsJahr) {
+  const t = String(text || "").trim();
+  let m = t.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);        // 05.08.2026
+  if (m) {
+    let jahr = Number(m[3]); if (jahr < 100) jahr += 2000;
+    return jahr + "-" + String(Number(m[2])).padStart(2, "0") + "-" + String(Number(m[1])).padStart(2, "0");
+  }
+  m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);                        // 2026-08-05
+  if (m) return m[1] + "-" + String(Number(m[2])).padStart(2, "0") + "-" + String(Number(m[3])).padStart(2, "0");
+  m = t.match(/^(\d{1,2})[.\/-](\d{1,2})\.?$/);                       // 05.08. ohne Jahr
+  if (m) return (bezugsJahr || todayISO().slice(0, 4)) + "-" + String(Number(m[2])).padStart(2, "0") + "-" + String(Number(m[1])).padStart(2, "0");
+  return "";
+}
+
+// Reine, testbare Auswertung einer Banken-CSV
+function parseCsvAusgaben(text, bezugsMonat) {
+  if (!text) return { posten: [], fehler: "Die Datei ist leer." };
+  const zeilen = String(text).split(/\r?\n/).filter(z => z.trim() !== "");
+  if (zeilen.length < 2) return { posten: [], fehler: "Die Datei enthält keine Umsätze." };
+
+  // Die Kopfzeile ist die erste Zeile, die mehrere bekannte Spaltennamen enthaelt
+  const SPALTEN = {
+    datum: /(buchungstag|buchungsdatum|^datum$|wertstellung|valuta)/i,
+    zweck: /(verwendungszweck|buchungstext|beschreibung|vorgang|zahlungsempf|empfänger|beguenstigter|begünstigter|auftraggeber|name)/i,
+    betrag: /(betrag|umsatz|soll|haben|wert)/i,
+  };
+  let kopfIndex = -1, trenner = ";", kopf = [];
+  for (let i = 0; i < Math.min(zeilen.length, 15); i++) {
+    const t = csvTrenner(zeilen[i]);
+    const felder = csvZeile(zeilen[i], t);
+    const hatDatum = felder.some(f => SPALTEN.datum.test(f));
+    const hatBetrag = felder.some(f => SPALTEN.betrag.test(f));
+    if (hatDatum && hatBetrag) { kopfIndex = i; trenner = t; kopf = felder; break; }
+  }
+  if (kopfIndex < 0) return { posten: [], fehler: "Keine Kopfzeile mit Datum und Betrag gefunden. Exportiere den Umsatz als CSV mit Spaltenüberschriften." };
+
+  const finde = re => kopf.findIndex(f => re.test(f));
+  const iDatum = finde(SPALTEN.datum);
+  const iBetrag = kopf.findIndex(f => /^(betrag|umsatz|wert)/i.test(f)) >= 0
+    ? kopf.findIndex(f => /^(betrag|umsatz|wert)/i.test(f)) : finde(SPALTEN.betrag);
+  const iSoll = kopf.findIndex(f => /^soll/i.test(f));
+  const iHaben = kopf.findIndex(f => /^haben/i.test(f));
+  // Name der Buchung: der Empfaenger ist am aussagekraeftigsten, danach der Zweck,
+  // zuletzt der Buchungstext. Alles aneinanderzuhaengen gaebe unlesbare Bandwuermer.
+  const nameSpalten = [
+    kopf.findIndex(f => /(beguenstigter|begünstigter|zahlungspflichtiger|empfänger|empfaenger|auftraggeber)/i.test(f)),
+    kopf.findIndex(f => /(verwendungszweck|beschreibung|vorgang)/i.test(f)),
+    kopf.findIndex(f => /(buchungstext|^name$)/i.test(f)),
+  ].filter(i => i >= 0);
+
+  const bezug = bezugsMonat || todayISO().slice(0, 7);
+  const posten = [];
+  let eingaenge = 0;
+
+  for (let i = kopfIndex + 1; i < zeilen.length; i++) {
+    const f = csvZeile(zeilen[i], trenner);
+    if (f.length < 2) continue;
+    const datum = csvDatum(f[iDatum], bezug.slice(0, 4));
+    if (!datum) continue;
+
+    let betrag = null;
+    if (iSoll >= 0 && csvZahl(f[iSoll]) !== null && String(f[iSoll]).trim() !== "") betrag = -Math.abs(csvZahl(f[iSoll]));
+    else if (iHaben >= 0 && csvZahl(f[iHaben]) !== null && String(f[iHaben]).trim() !== "") betrag = Math.abs(csvZahl(f[iHaben]));
+    else if (iBetrag >= 0) betrag = csvZahl(f[iBetrag]);
+    if (betrag === null) continue;
+    if (betrag >= 0) { eingaenge++; continue; }                    // Eingaenge sind keine Ausgaben
+
+    let name = "";
+    for (const i of nameSpalten) {                                  // erste gefuellte Spalte gewinnt
+      const wert = String(f[i] || "").replace(/\s{2,}/g, " ").trim();
+      if (wert) { name = wert; break; }
+    }
+    name = name.replace(/^[\s.,;:/–-]+|[\s.,;:/–-]+$/g, "").trim();
+    if (!name) name = "Buchung";
+    if (name.length > 38) name = name.slice(0, 38).trim();
+
+    posten.push({ datum, name, betrag: Math.round(Math.abs(betrag) * 100) / 100,
+                  kat: kategorieFuerNamen(name) || "Sonstiges" });
+  }
+  if (!posten.length) {
+    return { posten: [], fehler: eingaenge
+      ? "Nur Eingänge gefunden, keine Ausgaben." : "Keine Buchungen erkannt – stimmt das Format?" };
+  }
+  return { posten: posten.slice(0, 200), fehler: "", eingaenge, spalten: kopf.length };
+}
+
+function istCsv(file) {
+  return /\.csv$/i.test(file.name || "") || /csv|text\/plain/.test(file.type || "");
+}
+
 // --- Kontoauszug: variable Ausgaben herauslesen ---
 // Reine, testbare Erkennung. bezugsMonat = "JJJJ-MM" fuer fehlende Jahresangaben
 function parseAusgaben(text, bezugsMonat) {
@@ -2170,18 +2438,31 @@ async function handleAuszugFile(file) {
   setScanStatus("Kontoauszug wird gelesen …");
   try {
     let text = null;
+    if (istCsv(file)) {                                   // CSV: keine Texterkennung noetig
+      const roh = await file.text();
+      const e = parseCsvAusgaben(roh, data.currentMonth);
+      if (e.fehler) { setScanStatus(e.fehler, true); return; }
+      const posten = e.posten.map(p => Object.assign(p, { fix: istFixposten(p.name), doppelt: schonErfasst(p.datum, p.betrag) }));
+      zeigeAuszug(posten);
+      const auffaellig = posten.filter(p => p.fix || p.doppelt).length;
+      setScanStatus("Aus der CSV gelesen – exakt, ohne Texterkennung. " + posten.length +
+        (posten.length === 1 ? " Ausgabe" : " Ausgaben") +
+        (e.eingaenge ? ", " + e.eingaenge + " Eingänge übersprungen" : "") + "." +
+        (auffaellig ? " " + auffaellig + " Zeilen sind als Fixkosten oder bereits erfasst gekennzeichnet." : ""));
+      return;
+    }
     if (file.type === "application/pdf") {
       text = await pdfText(file, 5);
       if (!text || text.replace(/\s/g, "").length < 40) {
         setScanStatus("Kein Text in der PDF – Texterkennung läuft, das dauert einen Moment.");
-        const cv = await renderPdfFirstPage(file);
-        if (!cv) { setScanStatus("PDF konnte nicht gelesen werden (Internetverbindung nötig?).", true); return; }
-        text = await ocrText(cv);
+        const seiten = await renderPdfSeiten(file, 5);           // alle Seiten, nicht nur die erste
+        if (!seiten.length) { setScanStatus("PDF konnte nicht gelesen werden (Internetverbindung nötig?).", true); return; }
+        text = await ocrSeiten(seiten, setScanStatus);
       }
     } else {
       const img = await loadImage(file);
       setScanStatus("Text wird erkannt … das dauert einen Moment.");
-      text = await ocrText(scaleToCanvas(img, 1600));
+      text = await ocrText(fuerErkennungAufbereiten(img));
     }
     if (text == null) { setScanStatus("Texterkennung nicht verfügbar (Internet nötig).", true); return; }
     const posten = parseAusgaben(text, data.currentMonth).map(p =>
@@ -2484,6 +2765,16 @@ function kmZahlen(key) {
   return { gesamtKm, kinderKm, anteil, autokosten, jeKm,
            kinderAnteilKosten: autokosten * anteil, buchungen: mitKm.length,
            jahr, jahrKm, jahrKinderKm };
+}
+
+function renderSpeicher() {
+  const el = document.getElementById("speicherInfo");
+  if (!el) return;
+  const g = speicherGroesse();
+  el.innerHTML = "Belegt: <b>" + alsGroesse(g.gesamt) + "</b>" +
+    (g.anzahlBelege ? " · davon " + alsGroesse(g.belege) + " für " + g.anzahlBelege +
+      (g.anzahlBelege === 1 ? " Belegfoto" : " Belegfotos") : "") +
+    ". Browser geben einer Seite meist rund 5 MB – Belegfotos füllen das am schnellsten.";
 }
 
 function renderKm() {
@@ -3185,6 +3476,8 @@ document.getElementById("balDate").addEventListener("change", e => {
   data.balanceDate = e.target.value || todayISO();
   pruefeKassensturz(); renderVorschau(); save();
 });
+document.getElementById("speicherBackup").addEventListener("click", exportBackup);
+document.getElementById("speicherBelege").addEventListener("click", belegeEntfernen);
 document.getElementById("icsBtn").addEventListener("click", exportICS);
 document.getElementById("sturzBuchen").addEventListener("click", sturzNachbuchen);
 document.getElementById("sturzWeg").addEventListener("click", () => { data.sturz = null; renderSturz(); save(); });

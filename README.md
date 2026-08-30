@@ -35,6 +35,12 @@ Kein Server, kein Konto, keine Installation.
 - Kilometer je Ausgabe (optional, auch als „340km" in der Schnellzeile): Anteil der Fahrten
   für die Kinder, Kosten je Kilometer und der daraus abgeleitete Kostenanteil
 - „Zuletzt gebucht" mit Löschknopf je Zeile
+- CSV-Import vom Online-Banking: exakt statt Texterkennung, erkennt Kopfzeile, Trennzeichen,
+  deutsche wie englische Zahlenformate und getrennte Soll-/Haben-Spalten
+- Texterkennung liest bis zu fünf Seiten, bereitet das Bild vorher auf (Graustufen, Kontrast,
+  Schwarzweiß) und gibt Tesseract die Seitenstruktur vor
+- Warnung, wenn der Browser nicht speichern kann (Speicher voll oder gesperrt), mit
+  Speicheranzeige und der Möglichkeit, Belegfotos zu entfernen
 - Kontoauszug als Ausgaben-Import: Kartenzahlungen und Lastschriften mit Datum, Betrag und
   geratener Kategorie; bereits erfasste Buchungen und Fixposten werden gekennzeichnet
 - Händler-Gedächtnis: eine korrigierte Kategorie gilt beim nächsten Mal automatisch
