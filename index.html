@@ -304,6 +304,12 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .scanthumb{width:56px;height:56px;object-fit:cover;border-radius:8px;box-shadow:0 0 0 1px var(--slate200)}
 .scanstatus{font-size:13px;color:var(--slate500);margin:10px 0 0;min-height:18px}
 .zeithint{font-size:13px;color:var(--vary700);margin:8px 0 0;min-height:0}
+.schnelllab{display:block;font-size:12px;font-weight:600;color:var(--slate500);margin-bottom:6px}
+.schnellzeile{display:flex;gap:8px;align-items:center}
+.schnellzeile .grow{flex:1;min-width:0}
+.schnellbtn{grid-column:auto;flex:none;padding:10px 18px}
+.schnellvor{font-size:13px;color:var(--slate500);margin:8px 0 0;min-height:18px}
+.schnellvor.gut{color:var(--em700);font-weight:500}
 .zeit{font-size:11px;color:var(--slate400);white-space:nowrap}
 .bposten{margin-top:12px;background:#fff;border-radius:12px;box-shadow:0 0 0 1px var(--slate200);overflow:hidden}
 .bposten.hidden{display:none}
@@ -311,6 +317,8 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .bpcheck{flex:none;width:17px;height:17px;accent-color:var(--vary600)}
 .bpname{flex:1 1 120px;min-width:0}
 .bpcat{flex:1 1 130px;min-width:0;font-size:13px}
+.azdate{flex:none;width:58px;font-size:12px;color:var(--slate500)}
+.azmarke{flex:none;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap;background:var(--slate100);color:var(--slate500)}
 .fixscan{padding:12px 16px;border-top:1px solid var(--fixed100);background:rgba(238,242,255,.25)}
 .fixscan .scanstatus{margin:8px 0 0}
 .fixfound{margin-top:10px;background:#fff;border-radius:12px;box-shadow:0 0 0 1px var(--slate200);overflow:hidden}
@@ -457,6 +465,16 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
       <div class="section-head"><span class="dot dot--vary"></span><h2 class="section-title">Variable Kosten &amp; Ausgabebuch</h2></div>
 
       <div class="panel panel-pad">
+        <label class="schnelllab" for="schnellInput">Schnell erfassen</label>
+        <div class="schnellzeile">
+          <input id="schnellInput" class="inp inp--v grow" type="text" inputmode="text"
+                 placeholder="12,50 Rewe Lebensmittel" autocomplete="off">
+          <button id="schnellBtn" class="expbtn schnellbtn" type="button">Buchen</button>
+        </div>
+        <p id="schnellVorschau" class="schnellvor"></p>
+      </div>
+
+      <div class="panel panel-pad">
         <div class="expform">
           <div class="field f-date"><label for="expDate">Datum</label><input id="expDate" class="inp inp--v" type="date"></div>
           <div class="field f-amount"><label for="expAmount">Betrag (€)</label><input id="expAmount" class="inp inp--v num" type="number" step="0.01" inputmode="decimal" placeholder="0,00"></div>
@@ -467,6 +485,8 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
         <div class="scanrow">
           <button id="scanBtn" class="btn-outline" type="button">📷 Beleg scannen (Foto / PDF)</button>
           <input id="scanFile" type="file" accept="image/*,application/pdf" style="display:none">
+          <button id="auszugBtn" class="btn-outline" type="button" style="margin-top:8px">📄 Kontoauszug einlesen (Ausgaben)</button>
+          <input id="auszugFile" type="file" accept="image/*,application/pdf" style="display:none">
         </div>
         <div id="scanPreview" class="scanprev hidden">
           <img id="scanThumb" class="scanthumb" alt="Beleg">
@@ -474,6 +494,15 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
         </div>
         <p id="zeitHinweis" class="zeithint"></p>
         <p id="scanStatus" class="scanstatus"></p>
+        <div id="auszugBox" class="bposten hidden">
+          <p class="ffhead" id="azHead">Ausgaben aus dem Kontoauszug</p>
+          <div id="azListe"></div>
+          <div class="ffactions">
+            <button id="azBuchen" class="btn-dark" type="button">Ausgewählte buchen</button>
+            <button id="azAlle" class="btn-outline" type="button">Alle auswählen</button>
+            <button id="azWeg" class="link-reset" type="button">Verwerfen</button>
+          </div>
+        </div>
         <div id="belegPosten" class="bposten hidden">
           <p class="ffhead" id="bpHead">Einzelposten vom Beleg</p>
           <div id="bpListe"></div>
@@ -759,6 +788,7 @@ function normalisiereStamm(d) {
     d.balanceLetzt = d.balance !== null && d.balanceDate ? { betrag: d.balance, datum: d.balanceDate } : null;
   }
   if (!d.sturz || typeof d.sturz.differenz !== "number") d.sturz = null;
+  if (!d.haendler || typeof d.haendler !== "object") d.haendler = {};
   const std = Number(d.wochenstunden);
   d.wochenstunden = std > 0 && std <= 100 ? std : 40;
   d.zeitAn = !!d.zeitAn;
@@ -1790,6 +1820,289 @@ function renderAuffaellig() {
     (a.laufend ? ', jeweils nur bis zum ' + a.stichtag + '. des Monats – sonst wäre der laufende Monat im Nachteil' : '') + '.</p>';
 }
 
+// --- Haendler erkennen und dazulernen ---
+const HAENDLER = {
+  "Lebensmittel": ["rewe","edeka","aldi","lidl","netto","penny","kaufland","norma","famila","tegut","nahkauf","supermarkt","getraenke","getränke","baecker","bäcker","metzger","hofladen"],
+  "Tanken / Auto": ["aral","shell","esso","agip","total","tankstelle","tanken","sprit","werkstatt","reifen","autohaus","waschpark"],
+  "Haushalt": ["rossmann","mueller","müller","ikea","obi","bauhaus","hornbach","toom","baumarkt","tedi","action"],
+  "Gesundheit": ["apotheke","arztpraxis","zahnarzt","physio","optiker","brille"],
+  "Kleidung": ["zalando","deichmann","zara","primark","peek","schuhhaus","modehaus"],
+  "Restaurant": ["restaurant","pizzeria","imbiss","doener","döner","mcdonald","burger","cafe","café","kantine","lieferando"],
+  "Freizeit": ["netflix","spotify","disney","kino","fitness","schwimmbad","steam","zoo","museum"],
+  "Kinder": ["kita","kindergarten","spielzeug","schulbedarf"],
+};
+const KURZ_HAENDLER = { "dm": "Haushalt", "jet": "Tanken / Auto", "star": "Tanken / Auto", "kik": "Kleidung", "h&m": "Kleidung" };
+
+function haendlerSchluessel(name) {
+  const teile = String(name).toLowerCase().replace(/[^a-zäöüß0-9&\s]/g, " ").split(/\s+/).filter(t => t.length >= 2);
+  return teile.length ? teile[0] : "";
+}
+function kategorieFuerNamen(name) {
+  if (!name) return null;
+  const n = String(name).toLowerCase();
+  const key = haendlerSchluessel(name);
+  if (key && data.haendler && data.haendler[key]) return data.haendler[key];       // Gelerntes zuerst
+  for (const kurz in KURZ_HAENDLER) {
+    if (n.split(/[^a-zäöüß0-9&]+/).includes(kurz)) return KURZ_HAENDLER[kurz];
+  }
+  for (const kat in HAENDLER) if (HAENDLER[kat].some(w => n.includes(w))) return kat;
+  return null;
+}
+function merkeHaendler(name, kategorie) {
+  const key = haendlerSchluessel(name);
+  if (!key || !kategorie) return;
+  if (!data.haendler) data.haendler = {};
+  data.haendler[key] = kategorie;
+}
+
+// --- Kontoauszug: variable Ausgaben herauslesen ---
+// Reine, testbare Erkennung. bezugsMonat = "JJJJ-MM" fuer fehlende Jahresangaben
+function parseAusgaben(text, bezugsMonat) {
+  if (!text) return [];
+  const SKIP = /(kontostand|saldo|übertrag|uebertrag|zwischensumme|\bsumme\b|iban|bic|\bblz\b|auszug\s*nr|kontoauszug|seite\s*\d)/i;
+  const EINGANG = /(gutschrift|zahlungseingang|gehalt|\blohn\b|kindergeld|\brente\b|erstattung|\beingang\b)/i;
+  const GELD = /-?\d{1,3}(?:[.\s]\d{3})*[.,]\d{2}|-?\d+[.,]\d{2}/g;
+  const RAUSCH = /\b(sepa|basislastschrift|lastschrift|dauerauftrag|kartenzahlung|karteneinsatz|girocard|kartenzhlg|überweisung|ueberweisung|mandat|mandatsref\w*|ref|referenz|eref|kref|mref|cred|svwz|abwa|beleg|valuta|terminal|nr|eur|euro)\b\.?/gi;
+
+  const zahl = str => {
+    let t = String(str).replace(/\s/g, "");
+    if (t.includes(".") && t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+    else if (t.includes(",")) t = t.replace(",", ".");
+    const n = parseFloat(t);
+    return isNaN(n) ? null : n;
+  };
+  const wortFall = w => (w.length > 3 && w === w.toUpperCase() && /[A-ZÄÖÜ]/.test(w)) ? w[0] + w.slice(1).toLowerCase() : w;
+  const heute = todayISO();
+  const bezug = bezugsMonat || heute.slice(0, 7);
+
+  const treffer = [];
+  String(text).split(/\r?\n/).forEach(roh => {
+    const zeile = roh.trim();
+    if (!zeile || SKIP.test(zeile) || EINGANG.test(zeile)) return;
+
+    const dm = zeile.match(/^\s*(\d{1,2})\.(\d{1,2})\.(\d{2,4})?/);      // Buchungsdatum am Zeilenanfang
+    const funde = [...zeile.replace(/^\s*\d{1,2}\.\d{1,2}\.(\d{2,4})?/, " ").matchAll(GELD)];
+    if (!funde.length) return;
+    const letzter = funde[funde.length - 1];
+    const rohBetrag = letzter[0];
+    const nach = zeile.slice(zeile.lastIndexOf(rohBetrag) + rohBetrag.length, zeile.lastIndexOf(rohBetrag) + rohBetrag.length + 3);
+    if (/^\s*[+H]/.test(nach)) return;                                   // Haben-Buchung, also Eingang
+    const betrag = zahl(rohBetrag);
+    if (betrag === null) return;
+    const wert = Math.abs(betrag);
+    if (wert <= 0 || wert > 20000) return;
+
+    let name = zeile.replace(/^\s*\d{1,2}\.\d{1,2}\.(\d{2,4})?/, " ")
+      .slice(0, zeile.replace(/^\s*\d{1,2}\.\d{1,2}\.(\d{2,4})?/, " ").lastIndexOf(rohBetrag))
+      .replace(/[A-Z]{2}\d{2}[A-Z0-9]{8,}/g, " ")
+      .replace(RAUSCH, " ")
+      .replace(/(?:^|\s)[\d/-]{4,}(?=\s|$)/g, " ")
+      .replace(/\b\d{1,2}[.:]\d{2}\s*(uhr)?\b/gi, " ")
+      .replace(/[€|*]/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[\s.,;:/–-]+|[\s.,;:/–-]+$/g, "")
+      .trim();
+    name = name.split(/\s+/).map(wortFall).join(" ").slice(0, 38).trim();
+    if (name.length < 3 || !/[A-Za-zÄÖÜäöüß]{3}/.test(name)) return;
+
+    let datum = "";
+    if (dm) {
+      const tag = Number(dm[1]), monat = Number(dm[2]);
+      let jahr = dm[3] ? Number(dm[3]) : Number(bezug.slice(0, 4));
+      if (jahr < 100) jahr += 2000;
+      if (tag >= 1 && tag <= 31 && monat >= 1 && monat <= 12) {
+        let iso = jahr + "-" + String(monat).padStart(2, "0") + "-" + String(tag).padStart(2, "0");
+        if (!dm[3] && iso > heute) {                                     // ohne Jahr: nicht in der Zukunft landen
+          iso = (jahr - 1) + "-" + String(monat).padStart(2, "0") + "-" + String(tag).padStart(2, "0");
+        }
+        datum = iso;
+      }
+    }
+    if (!datum) datum = bezug + "-01";
+
+    treffer.push({ datum, name, betrag: Math.round(wert * 100) / 100, kat: kategorieFuerNamen(name) || "Sonstiges" });
+  });
+  return treffer.slice(0, 60);
+}
+
+function istFixposten(name) {
+  const n = String(name).toLowerCase();
+  return cur().fixed.some(f => {
+    const fn = f.name.trim().toLowerCase();
+    return fn.length >= 4 && (n.includes(fn) || fn.includes(n));
+  });
+}
+function schonErfasst(datum, betrag) {
+  const key = datum.slice(0, 7);
+  const m = data.months[key];
+  if (!m) return false;
+  return m.variable.some(e => e.date === datum && Math.abs((Number(e.amount) || 0) - betrag) < 0.005);
+}
+
+function zeigeAuszug(posten) {
+  const box = document.getElementById("auszugBox"), liste = document.getElementById("azListe");
+  if (!posten.length) { box.classList.add("hidden"); liste.innerHTML = ""; return; }
+  const katOptionen = CATEGORIES.map(c => '<option value="' + c.name + '">' + c.name + "</option>").join("");
+  const kurz = iso => iso.slice(8, 10) + "." + iso.slice(5, 7) + ".";
+  document.getElementById("azHead").textContent =
+    posten.length + " Buchungen erkannt – anhaken, was als Ausgabe übernommen werden soll";
+  liste.innerHTML = posten.map((p, i) => {
+    const marke = p.fix ? '<span class="azmarke">Fixkosten</span>'
+      : p.doppelt ? '<span class="azmarke">schon erfasst</span>' : "";
+    return '<div class="bprow">' +
+      '<input type="checkbox" class="azcheck" data-i="' + i + '"' + (p.fix || p.doppelt ? "" : "") + '>' +
+      '<span class="azdate num">' + kurz(p.datum) + '</span>' +
+      '<input type="text" class="inp bpname" data-i="' + i + '" value="' + escapeAttr(p.name) + '">' +
+      '<div class="famt"><input type="number" step="0.01" inputmode="decimal" class="inp w-amt num azamt" data-i="' + i + '" value="' + p.betrag + '"><span class="cur">€</span></div>' +
+      '<select class="inp bpcat azcat" data-i="' + i + '">' + katOptionen + "</select>" + marke +
+      "</div>";
+  }).join("");
+  posten.forEach((p, i) => {
+    const sel = liste.querySelector('.azcat[data-i="' + i + '"]');
+    if (sel) sel.value = p.kat;
+  });
+  liste.dataset.datum = JSON.stringify(posten.map(p => p.datum));
+  box.classList.remove("hidden");
+}
+function versteckeAuszug() {
+  document.getElementById("auszugBox").classList.add("hidden");
+  document.getElementById("azListe").innerHTML = "";
+}
+
+function bucheAuszug() {
+  const liste = document.getElementById("azListe");
+  const daten = JSON.parse(liste.dataset.datum || "[]");
+  let anzahl = 0, summe = 0;
+  liste.querySelectorAll(".azcheck").forEach(cb => {
+    if (!cb.checked) return;
+    const i = cb.dataset.i;
+    const name = liste.querySelector('.bpname[data-i="' + i + '"]').value.trim();
+    const betrag = parseFloat(liste.querySelector('.azamt[data-i="' + i + '"]').value);
+    const kat = liste.querySelector('.azcat[data-i="' + i + '"]').value;
+    const datum = daten[i] || todayISO();
+    if (!betrag || betrag <= 0) return;
+    ensureMonth(datum.slice(0, 7));
+    data.months[datum.slice(0, 7)].variable.push({ id: uid(), date: datum, amount: betrag, description: name, category: kat });
+    merkeHaendler(name, kat);                       // beim naechsten Mal weiss die App es
+    anzahl++; summe += betrag;
+  });
+  if (!anzahl) { setScanStatus("Nichts angehakt – es wurde nichts gebucht.", true); return; }
+  versteckeAuszug();
+  render();
+  setScanStatus(anzahl + " Buchungen übernommen, zusammen " + fmt(summe) + ".");
+}
+
+async function handleAuszugFile(file) {
+  if (!file) return;
+  versteckeAuszug();
+  setScanStatus("Kontoauszug wird gelesen …");
+  try {
+    let text = null;
+    if (file.type === "application/pdf") {
+      text = await pdfText(file, 5);
+      if (!text || text.replace(/\s/g, "").length < 40) {
+        setScanStatus("Kein Text in der PDF – Texterkennung läuft, das dauert einen Moment.");
+        const cv = await renderPdfFirstPage(file);
+        if (!cv) { setScanStatus("PDF konnte nicht gelesen werden (Internetverbindung nötig?).", true); return; }
+        text = await ocrText(cv);
+      }
+    } else {
+      const img = await loadImage(file);
+      setScanStatus("Text wird erkannt … das dauert einen Moment.");
+      text = await ocrText(scaleToCanvas(img, 1600));
+    }
+    if (text == null) { setScanStatus("Texterkennung nicht verfügbar (Internet nötig).", true); return; }
+    const posten = parseAusgaben(text, data.currentMonth).map(p =>
+      Object.assign(p, { fix: istFixposten(p.name), doppelt: schonErfasst(p.datum, p.betrag) }));
+    if (!posten.length) { setScanStatus("Keine Buchungen erkannt. Bei einem Foto hilft: gerade von oben, gutes Licht.", true); return; }
+    zeigeAuszug(posten);
+    const auffaellig = posten.filter(p => p.fix || p.doppelt).length;
+    setScanStatus("Bitte prüfen – übernommen wird nur, was angehakt ist." +
+      (auffaellig ? " " + auffaellig + " Zeilen sind als Fixkosten oder bereits erfasst gekennzeichnet." : ""));
+  } catch (e) { setScanStatus("Kontoauszug konnte nicht verarbeitet werden.", true); }
+}
+
+document.getElementById("auszugBtn").addEventListener("click", () => document.getElementById("auszugFile").click());
+document.getElementById("auszugFile").addEventListener("change", e => { const f = e.target.files[0]; if (f) handleAuszugFile(f); e.target.value = ""; });
+document.getElementById("azBuchen").addEventListener("click", bucheAuszug);
+document.getElementById("azAlle").addEventListener("click", () => {
+  const boxen = [...document.querySelectorAll("#azListe .azcheck")];
+  const alleAn = boxen.every(b => b.checked);
+  boxen.forEach(b => { b.checked = !alleAn; });
+  document.getElementById("azAlle").textContent = alleAn ? "Alle auswählen" : "Alle abwählen";
+});
+document.getElementById("azWeg").addEventListener("click", () => { versteckeAuszug(); setScanStatus(""); });
+
+// --- Schnell erfassen: eine Zeile, ein Satz ---
+// Reine, testbare Zerlegung von "12,50 Rewe Lebensmittel"
+function parseSchnell(text) {
+  const roh = String(text || "").trim();
+  if (!roh) return null;
+  const woerter = roh.split(/\s+/);
+
+  let betrag = null, iBetrag = -1;
+  woerter.forEach((w, i) => {
+    if (betrag !== null) return;
+    const t = w.replace(/[€]/g, "").replace(/^[+-]/, "");
+    if (!/^\d{1,6}([.,]\d{1,2})?$/.test(t)) return;
+    const n = parseFloat(t.replace(",", "."));
+    if (!isNaN(n) && n > 0) { betrag = Math.round(n * 100) / 100; iBetrag = i; }
+  });
+  if (betrag === null) return null;
+
+  const rest = woerter.filter((_, i) => i !== iBetrag);
+  const passt = (wort, katName) => {
+    const w = wort.toLowerCase().replace(/[^a-zäöüß]/g, "");
+    if (w.length < 3) return false;
+    return katName.toLowerCase().split(/[^a-zäöüß]+/).some(t => t.length >= 3 && (t.startsWith(w) || w.startsWith(t)));
+  };
+  let kategorie = null, iKat = -1;
+  rest.forEach((w, i) => {
+    if (kategorie) return;
+    const treffer = CATEGORIES.find(c => passt(w, c.name));
+    if (treffer) { kategorie = treffer.name; iKat = i; }
+  });
+
+  const zweck = rest.filter((_, i) => i !== iKat)
+    .filter(w => !/^(€|eur|euro)$/i.test(w))          // reine Waehrungsangaben gehoeren nicht in den Zweck
+    .join(" ").trim();
+  if (!kategorie) kategorie = kategorieFuerNamen(zweck) || data.lastCategory || CATEGORIES[0].name;
+  return { betrag, kategorie, zweck };
+}
+
+function zeigeSchnellVorschau() {
+  const el = document.getElementById("schnellVorschau");
+  const g = parseSchnell(document.getElementById("schnellInput").value);
+  if (!g) {
+    el.textContent = document.getElementById("schnellInput").value.trim()
+      ? "Noch kein Betrag erkannt – etwa „12,50 Rewe Lebensmittel“."
+      : "";
+    el.className = "schnellvor";
+    return;
+  }
+  el.textContent = "Bucht: " + fmt(g.betrag) + " · " + g.kategorie + (g.zweck ? " · " + g.zweck : "");
+  el.className = "schnellvor gut";
+}
+
+function schnellBuchen() {
+  const feld = document.getElementById("schnellInput");
+  const g = parseSchnell(feld.value);
+  if (!g) { zeigeSchnellVorschau(); feld.focus(); return; }
+  cur().variable.push({ id: uid(), date: todayISO(), amount: g.betrag, description: g.zweck, category: g.kategorie });
+  data.lastCategory = g.kategorie;
+  if (g.zweck) merkeHaendler(g.zweck, g.kategorie);
+  feld.value = "";
+  render();
+  const el = document.getElementById("schnellVorschau");
+  el.textContent = fmt(g.betrag) + " gebucht" + (g.zweck ? " – " + g.zweck : "") + ".";
+  el.className = "schnellvor gut";
+  feld.focus();
+}
+
+document.getElementById("schnellInput").addEventListener("input", zeigeSchnellVorschau);
+document.getElementById("schnellInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); schnellBuchen(); } });
+document.getElementById("schnellBtn").addEventListener("click", schnellBuchen);
+
 // --- Preise in Arbeitszeit ---
 const WOCHEN_JE_MONAT = 13 / 3;                    // 52 Wochen auf 12 Monate
 
@@ -1927,6 +2240,7 @@ function bucheBelegPosten() {
     const kat = liste.querySelector('.bpcat[data-i="' + i + '"]').value;
     if (!betrag || betrag <= 0) return;
     cur().variable.push({ id: uid(), date: datum, amount: betrag, description: name, category: kat });
+    merkeHaendler(name, kat);
     anzahl++; summe += betrag;
   });
   if (!anzahl) { setScanStatus("Nichts angehakt – es wurde nichts gebucht.", true); return; }

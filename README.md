@@ -14,6 +14,11 @@ Kein Server, kein Konto, keine Installation.
 - Fixkosten aus Kontoauszug, Schreiben oder Aufstellung einlesen (PDF oder Foto):
   erkannte Posten erscheinen als Vorschlagsliste, übernommen wird nur das Angehakte;
   ein bereits bekannter Posten bekommt den neuen Betrag statt eines zweiten Eintrags
+- Schnell-Erfassung: Betrag, Zweck und Kategorie in einer Zeile („12,50 Rewe Lebensmittel"),
+  Diktat über die Tastatur möglich
+- Kontoauszug als Ausgaben-Import: Kartenzahlungen und Lastschriften mit Datum, Betrag und
+  geratener Kategorie; bereits erfasste Buchungen und Fixposten werden gekennzeichnet
+- Händler-Gedächtnis: eine korrigierte Kategorie gilt beim nächsten Mal automatisch
 - Ausgabebuch mit neun Kategorien (Lebensmittel, Tanken/Auto, Kinder, Freizeit …)
 - Verbleibender Puffer als große Kennzahl, farbig nach Lage (grün / gelb / rot)
 - Optionales Tagesbudget mit Hochrechnung auf den Monat
