@@ -318,6 +318,7 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .heutemonat{text-align:right}
 .heutemonat .heutewert{font-size:24px;opacity:.92}
 .heutesatz{margin:18px 0 0;font-size:15px;line-height:1.55;opacity:.95}
+.heuteherleitung{margin:12px 0 0;font-size:12px;line-height:1.5;opacity:.75;border-top:1px solid rgba(255,255,255,.25);padding-top:10px}
 .heutesatz b{font-weight:600}
 .heuterueck{margin:12px 2px 0;font-size:13px;color:var(--slate500);line-height:1.5}
 .zuletzt-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--slate100);font-size:14px}
@@ -423,6 +424,7 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           <div class="heutemonat"><p class="heutelab">Diesen Monat</p><p class="heutewert num" id="heuteMonat">–</p></div>
         </div>
         <p class="heutesatz" id="heuteSatz"></p>
+        <p class="heuteherleitung" id="heuteHerleitung"></p>
       </div>
       <p class="heuterueck" id="heuteRueck"></p>
     </div>
@@ -2215,21 +2217,44 @@ function heuteZahlen() {
   const hochgerechnet = tempo * tage;
   const verfuegbarGesamt = (Number(m.income) || 0) - fixedTotal(m) - geplantBetrag;
 
+  // Datenlage: worauf stuetzt sich die Rechnung ueberhaupt?
+  const vormonate = recordedKeys().filter(k => k !== key).slice(-6);
+  const schnitt = schnittProTag();
+  const nichtsEingerichtet = !(Number(m.income) || 0) && !m.fixed.length && !m.variable.length;
+  const ohneFixkosten = (Number(m.income) || 0) > 0 && !m.fixed.length;
+  const ohneErfahrung = !vormonate.length && !m.variable.length;
+  // Fuer eine Tempoaussage: genug Tage vergangen und genug gebucht
+  const genugTempo = m.variable.length >= 3 && (!laufend || tagNr >= 5);
+
   return { frei, proTag, verbleibend, tage, tagNr, laufend, kuenftig,
            geplantBetrag, offenGeplant, fixBetrag, offenFix,
-           tempo, hochgerechnet, verfuegbarGesamt, bisher };
+           tempo, hochgerechnet, verfuegbarGesamt, bisher,
+           schnitt, monate: vormonate.length, nichtsEingerichtet, ohneFixkosten, ohneErfahrung, genugTempo };
 }
 
 function heuteSatz(z) {
   const m = cur();
-  if (!(Number(m.income) || 0) && !m.fixed.length && !m.variable.length) {
+  if (z.nichtsEingerichtet) {
     return { text: "Trag im Reiter <b>Monat</b> dein Einkommen und deine Fixkosten ein – dann steht hier, was dir bleibt.", art: "neutral" };
+  }
+  if (z.ohneFixkosten) {
+    return { text: "<b>Noch keine Fixkosten hinterlegt</b> – die Zahl oben ist deshalb zu optimistisch. " +
+                   "Trag Miete, Strom und Versicherungen im Reiter <b>Monat</b> ein, dann stimmt sie.", art: "warn" };
+  }
+  if (z.ohneErfahrung) {
+    return { text: "Noch keine Ausgabe erfasst – ich habe also keinen Erfahrungswert für dich. " +
+                   "Sobald du buchst, lernt die App dein Tempo und die Aussage wird belastbar.", art: "neutral" };
   }
   if (z.frei < 0) {
     return { text: "Du liegst <b>" + fmt(-z.frei) + "</b> über deinen Einnahmen. Jede weitere Ausgabe vergrößert das Loch.", art: "neg" };
   }
   if (!z.verbleibend) {
     return { text: "Der Monat ist abgeschlossen – übrig geblieben sind <b>" + fmt(z.frei) + "</b>.", art: "neutral" };
+  }
+  // Aussagen ueber das Tempo brauchen eine Mindestbasis, sonst sind sie geraten
+  if (!z.genugTempo) {
+    return { text: "Noch zu wenig gebucht für eine Aussage über dein Tempo – rechnerisch bleiben <b>" +
+                   fmt(z.proTag) + " pro Tag</b>. Ab etwa drei Buchungen wird die Einschätzung belastbar.", art: "neutral" };
   }
   if (z.hochgerechnet > z.verfuegbarGesamt && z.verfuegbarGesamt > 0 && z.bisher > 0) {
     const fehlt = z.hochgerechnet - z.verfuegbarGesamt;
@@ -2247,6 +2272,22 @@ function heuteSatz(z) {
   return { text: "Du liegst im Plan – <b>" + fmt(z.proTag) + " pro Tag</b> bis zum " + z.tage + ".", art: "neutral" };
 }
 
+// Erklaert die grosse Zahl und nennt die Datengrundlage
+function heuteHerleitung(z) {
+  if (z.nichtsEingerichtet) return "";
+  const teile = [];
+  if (z.verbleibend > 0) teile.push(fmt(z.frei) + " ÷ " + z.verbleibend + (z.verbleibend === 1 ? " verbleibender Tag" : " verbleibende Tage"));
+  if (z.schnitt) {
+    teile.push("dein Schnitt: " + fmt(z.schnitt) + " je Tag aus " + z.monate + (z.monate === 1 ? " Monat" : " Monaten"));
+    if (z.verbleibend > 0 && z.proTag > z.schnitt * 3) {
+      teile.push("also ein Vielfaches davon – der Rest bleibt am Monatsende übrig");
+    }
+  } else {
+    teile.push("noch kein Erfahrungswert – dafür braucht es einen abgeschlossenen Monat mit Ausgaben");
+  }
+  return teile.join(" · ") + ".";
+}
+
 function renderHeute() {
   const el = document.getElementById("heuteSatz");
   if (!el) return;
@@ -2254,6 +2295,10 @@ function renderHeute() {
   document.getElementById("heuteTag").textContent = z.verbleibend > 0 ? fmt(Math.max(0, z.proTag)) : "–";
   document.getElementById("heuteMonat").textContent = fmt(z.frei);
   el.innerHTML = s.text;
+  const herl = document.getElementById("heuteHerleitung");
+  const ht = heuteHerleitung(z);
+  herl.textContent = ht;
+  herl.style.display = ht ? "" : "none";
   document.getElementById("heuteKarte").className = "heutekarte " + s.art;
 
   const rueck = document.getElementById("heuteRueck");

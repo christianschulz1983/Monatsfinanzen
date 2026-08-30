@@ -7,8 +7,10 @@ Kein Server, kein Konto, keine Installation.
 ## Funktionen
 
 **Drei Reiter**
-- Heute: was heute und diesen Monat noch zur Verfügung steht, ein Statussatz aus den eigenen
-  Zahlen, Hinweis auf anstehende Zahlungen – und die Erfassung (Schnellzeile, Beleg, Auszug)
+- Heute: was heute und diesen Monat noch zur Verfügung steht, mit offengelegter Herleitung
+  und Erfahrungswert aus den letzten sechs Monaten; ein Statussatz aus den eigenen Zahlen,
+  der die eigene Datenlage prüft (fehlende Fixkosten, zu wenige Buchungen) statt zu raten;
+  Hinweis auf anstehende Zahlungen – und die Erfassung (Schnellzeile, Beleg, Auszug)
 - Monat: jede Ausgabe des Monats, Einnahmen und Fixkosten, geplante Einmalausgaben,
   90-Tage-Vorschau, Kassensturz
 - Statistik: Kategorien, Durchschnitte, Verlauf, Jahr, Auffälligkeiten, Rücklagen, Backup
