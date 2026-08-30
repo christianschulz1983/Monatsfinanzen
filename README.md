@@ -66,7 +66,8 @@ Kein Server, kein Konto, keine Installation.
 - Fälligkeiten als Kalenderdatei (.ics) mit Wecker sieben Tage vorher
 - Einzelposten vom Kassenbon einzeln buchen, mit Kategorievorschlag
 - Beträge wahlweise zusätzlich in Arbeitszeit
-- Bericht als PDF exportieren
+- Bericht als PDF exportieren; die Fixkostentabelle nennt Rhythmus, Fälligkeitsdatum,
+  Verrechnungsart sowie Monatsanteil und vollen Betrag
 
 ## Starten
 

@@ -190,8 +190,10 @@ td:first-child{white-space:nowrap;font-weight:600}
          Alle Anzeigen rechnen damit: Puffer, Summe Fixkosten, verfügbares Budget, Verlauf
          und PDF-Bericht.</p>
       <p class="hint">Ohne Fälligkeitsdatum kann die App den Monat nicht bestimmen – bei einem
-         anderen Rhythmus als monatlich also immer ein Datum setzen. Der Tag im Monat spielt
-         für die Rechnung keine Rolle, nur der Monat.</p>
+         anderen Rhythmus als monatlich also immer ein Datum setzen. Fehlt es, steht neben
+         „Fällig am" ein oranges <b>fehlt</b> und das Feld zeigt <b>tt.mm.jjjj</b>; ein Tippen
+         öffnet die Datumsauswahl. Der Tag im Monat spielt für die Rechnung keine Rolle, nur
+         der Monat – für die 90-Tage-Vorschau und den Kalender aber schon.</p>
 
       <h3>Fixkosten einlesen statt tippen</h3>
       <p><kbd>📄 Fixkosten einlesen (Foto / PDF)</kbd> nimmt einen Kontoauszug, ein Schreiben
@@ -430,6 +432,10 @@ td:first-child{white-space:nowrap;font-weight:600}
          Geparkte Posten bleiben außen vor.</p>
 
       <h3>PDF-Bericht</h3>
+      <p>Die Fixkostentabelle im Bericht führt jeden Posten mit <b>Rhythmus</b>, <b>Fälligkeitsdatum</b>
+         und <b>Verrechnung</b> auf – dazu zwei Beträge: den Anteil, mit dem der Posten diesen Monat
+         zählt, und den vollen Betrag der Zahlung. Bei monatlichen Posten steht beim Datum
+         „jeden 1.", bei fehlendem Datum ein Strich.</p>
       <p><kbd>Bericht als PDF</kbd> oben rechts ist zum Anschauen, Ausdrucken und Weitergeben.
          Zurücklesen lässt sich daraus nichts – dafür ist das Backup da.</p>
       <p class="hint warn"><b>Vorsicht bei „Monat zurücksetzen"</b> direkt darunter: Das leert den

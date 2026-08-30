@@ -186,6 +186,10 @@ input[type=number]{-moz-appearance:textfield}
 .fdline{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .fdlab{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--slate500);flex:1 1 150px}
 .fdinput{font-size:14px;width:100%}
+.datumfeld{min-height:38px}
+.datumfeld.leer{box-shadow:0 0 0 1px var(--vary500)}
+.datumfeld::placeholder{color:var(--slate400);font-weight:400}
+.fehlt{font-weight:600;color:var(--vary600)}
 .fdcheck{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;padding:3px 0}
 .fdcheck input{width:16px;height:16px;accent-color:var(--fixed600);flex:none}
 .fdcheck span{font-size:14px}
@@ -1074,7 +1078,11 @@ function renderFixed() {
     det.className = "fdetail";
     det.innerHTML =
       '<div class="fdline">' +
-        '<label class="fdlab">Fällig am<input type="date" class="inp fdinput" data-id="' + f.id + '" data-field="due" value="' + escapeAttr(f.due || "") + '"></label>' +
+        '<label class="fdlab">Fällig am' + (f.due ? "" : ' <span class="fehlt">fehlt</span>') +
+          // Leer als Textfeld, damit der Platzhalter sichtbar ist; beim Antippen wird daraus das Datumsfeld
+          '<input type="' + (f.due ? "date" : "text") + '" placeholder="tt.mm.jjjj" class="inp fdinput datumfeld' +
+            (f.due ? "" : " leer") + '" data-id="' + f.id + '" data-field="due" value="' + escapeAttr(f.due || "") + '">' +
+        '</label>' +
         '<label class="fdlab">Rhythmus<select class="inp fdinput" data-id="' + f.id + '" data-field="rhythm">' +
           Object.keys(RHYTHMEN).map(k => '<option value="' + k + '"' + (f.rhythm === k ? " selected" : "") + '>' + RHYTHMEN[k].lang + '</option>').join("") +
         '</select></label>' +
@@ -1093,6 +1101,12 @@ function renderFixed() {
       if (inp.dataset.field === "name") item.name = inp.value; else item.amount = parseFloat(inp.value) || 0;
       lightUpdate();
     });
+  });
+
+  // Leeres Datumsfeld beim Antippen in ein echtes Datumsfeld verwandeln
+  list.querySelectorAll(".datumfeld").forEach(el => {
+    el.addEventListener("focus", () => { if (el.type === "text") { el.type = "date"; el.showPicker && el.showPicker(); } });
+    el.addEventListener("blur", () => { if (!el.value) el.type = "text"; });
   });
 
   // Datum, Rhythmus, Haken: aendern die Kennzeichnung, deshalb Neuaufbau
@@ -3222,8 +3236,12 @@ function reportRows() {
   return {
     inc: Number(m.income) || 0, fix: fixedTotal(m), vari: variableTotal(m), buf: buffer(m),
     fixed: m.fixed.map(f => {
-      const marke = fixMarke(f, data.currentMonth);
-      return [f.name + (marke ? " (" + marke.text + ")" : ""), pe(monatsAnteil(f, data.currentMonth))];
+      const r = rhythmus(f);
+      const faellig = f.due
+        ? (r.n === 1 ? "jeden " + Number(f.due.slice(8, 10)) + "." : dateFmt.format(new Date(f.due + "T12:00:00")))
+        : "—";
+      const zusatz = !f.avg && !f.only ? "zählt nicht" : (f.avg && f.only ? "Anteil + Hinweis" : (f.avg ? "im Durchschnitt" : "nur bei Fälligkeit"));
+      return [f.name, r.lang, faellig, zusatz, pe(monatsAnteil(f, data.currentMonth)), pe(Number(f.amount) || 0)];
     }),
     variable: [...m.variable].sort((a, b) => (a.date < b.date ? 1 : -1)).map(e => [fmtDate(e.date), e.category || "Sonstiges", e.description || "—", pe(e.amount)]),
   };
@@ -3242,13 +3260,22 @@ function exportPDF() {
   const pk = prevRecordedKey(key);
   if (pk) { const dBuf = r.buf - buffer(data.months[pk]); summary.push(["Veränderung Puffer ggü. Vormonat", (dBuf >= 0 ? "+" : "-") + pe(Math.abs(dBuf))]); }
   doc.autoTable({ startY: 40, head: [["Übersicht", ""]], body: summary, theme: "grid", headStyles: { fillColor: [15, 23, 42] }, columnStyles: { 1: { halign: "right" } } });
-  doc.autoTable({ startY: doc.lastAutoTable.finalY + 8, head: [["Fixkosten", "Betrag"]], body: r.fixed, foot: [["Summe", pe(r.fix)]], theme: "striped", headStyles: { fillColor: [79, 70, 229] }, footStyles: { fillColor: [224, 231, 255], textColor: [55, 48, 163], fontStyle: "bold" }, columnStyles: { 1: { halign: "right" } } });
+  doc.autoTable({ startY: doc.lastAutoTable.finalY + 8,
+    head: [["Fixkosten", "Rhythmus", "Fällig am", "Verrechnung", "Anteil im Monat", "voller Betrag"]],
+    body: r.fixed, foot: [["Summe", "", "", "", pe(r.fix), ""]],
+    theme: "striped", styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [79, 70, 229], fontSize: 8 },
+    footStyles: { fillColor: [224, 231, 255], textColor: [55, 48, 163], fontStyle: "bold" },
+    columnStyles: { 4: { halign: "right" }, 5: { halign: "right" } } });
   doc.autoTable({ startY: doc.lastAutoTable.finalY + 8, head: [["Datum", "Kategorie", "Verwendungszweck", "Betrag"]], body: r.variable.length ? r.variable : [["—", "—", "Keine variablen Ausgaben erfasst", pe(0)]], foot: [["", "", "Summe", pe(r.vari)]], theme: "striped", headStyles: { fillColor: [234, 88, 12] }, footStyles: { fillColor: [255, 237, 213], textColor: [154, 52, 18], fontStyle: "bold" }, columnStyles: { 3: { halign: "right" } } });
   doc.save("Monatsbericht_" + key + ".pdf");
 }
 function printReport() {
   const r = reportRows(), key = data.currentMonth;
-  const rowsHtml = arr => arr.map(c => "<tr>" + c.map((v, i) => '<td style="padding:6px 10px;border-bottom:1px solid #eee;' + (i === c.length - 1 ? "text-align:right;" : "") + '">' + escapeHtml(v) + "</td>").join("") + "</tr>").join("");
+  // rechtsBuendig = wie viele Spalten am Ende rechtsbuendig stehen
+  const rowsHtml = (arr, rechtsBuendig) => arr.map(c => "<tr>" + c.map((v, i) =>
+    '<td style="padding:6px 10px;border-bottom:1px solid #eee;' +
+    (i >= c.length - (rechtsBuendig || 1) ? "text-align:right;" : "") + '">' + escapeHtml(v) + "</td>").join("") + "</tr>").join("");
   const w = window.open("", "_blank");
   if (!w) { alert("Bitte Pop-ups erlauben, um den PDF-Bericht zu erzeugen."); return; }
   w.document.write(
@@ -3260,7 +3287,9 @@ function printReport() {
     '<tr><td style="padding:6px 10px">Fixkosten</td><td class="r" style="padding:6px 10px">' + pe(r.fix) + '</td></tr>' +
     '<tr><td style="padding:6px 10px">Variable Ausgaben</td><td class="r" style="padding:6px 10px">' + pe(r.vari) + '</td></tr>' +
     '<tr><td style="padding:6px 10px"><b>Verbleibender Puffer</b></td><td class="r" style="padding:6px 10px"><b>' + pe(r.buf) + '</b></td></tr></table>' +
-    '<h2>Fixkosten</h2><table><tr><th>Posten</th><th class="r">Betrag</th></tr>' + rowsHtml(r.fixed) + '</table>' +
+    '<h2>Fixkosten</h2><table><tr><th>Posten</th><th>Rhythmus</th><th>Fällig am</th><th>Verrechnung</th><th class="r">Anteil im Monat</th><th class="r">voller Betrag</th></tr>' +
+      rowsHtml(r.fixed, 2) +
+      '<tr><td style="padding:6px 10px"><b>Summe</b></td><td colspan="3"></td><td class="r" style="padding:6px 10px"><b>' + pe(r.fix) + '</b></td><td></td></tr></table>' +
     '<h2>Variable Ausgaben</h2><table><tr><th>Datum</th><th>Kategorie</th><th>Verwendungszweck</th><th class="r">Betrag</th></tr>' +
     (r.variable.length ? rowsHtml(r.variable) : '<tr><td colspan="4" style="padding:6px 10px" class="muted">Keine variablen Ausgaben erfasst</td></tr>') +
     '</table></body></html>');
