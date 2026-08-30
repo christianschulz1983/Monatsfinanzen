@@ -304,6 +304,10 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .scanthumb{width:56px;height:56px;object-fit:cover;border-radius:8px;box-shadow:0 0 0 1px var(--slate200)}
 .scanstatus{font-size:13px;color:var(--slate500);margin:10px 0 0;min-height:18px}
 .zeithint{font-size:13px;color:var(--vary700);margin:8px 0 0;min-height:0}
+.restbox{margin-top:-18px;margin-bottom:32px}
+.restsatz{font-size:15px;margin:0;line-height:1.55;color:var(--ink)}
+.restsatz b{font-weight:600}
+.restsatz.knapp{color:var(--amber)} .restsatz.leer{color:var(--red)}
 .schnelllab{display:block;font-size:12px;font-weight:600;color:var(--slate500);margin-bottom:6px}
 .schnellzeile{display:flex;gap:8px;align-items:center}
 .schnellzeile .grow{flex:1;min-width:0}
@@ -379,12 +383,13 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
   </div>
 
   <div class="tabs">
-    <button id="tabBtnOverview" class="tab active">Übersicht</button>
+    <button id="tabBtnTag" class="tab active">Täglich</button>
+    <button id="tabBtnFix" class="tab">Fix</button>
     <button id="tabBtnEval" class="tab">Auswertung</button>
   </div>
 
   <!-- ===================== ÜBERSICHT ===================== -->
-  <div id="panelOverview" class="tabpanel active">
+  <div id="panelTag" class="tabpanel active">
 
     <section id="heroCard" class="hero pos">
       <div class="hero-top">
@@ -401,65 +406,9 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
       <p class="usage num" id="usageLabel"></p>
     </section>
 
-    <div class="cards">
-      <div class="card"><p class="card-label">Einnahmen</p><p class="card-value num c-emerald" id="cardIncome">–</p></div>
-      <div class="card card--fixed"><p class="card-label">Fixkosten</p><p class="card-value num c-fixed" id="cardFixed">–</p></div>
-      <div class="card card--vary"><p class="card-label">Variable Ausgaben</p><p class="card-value num c-vary" id="cardVariable">–</p></div>
-      <div class="card"><p class="card-label">Puffer</p><p class="card-value num" id="cardBuffer">–</p></div>
+    <div class="panel panel-pad restbox">
+      <p class="restsatz" id="restSatz">–</p>
     </div>
-
-    <section class="section">
-      <div class="section-head"><span class="dot dot--fc"></span><h2 class="section-title">Wann wird es eng?</h2></div>
-      <div class="panel panel-pad">
-        <div class="fcline">
-          <label class="fclab">Kontostand
-            <span class="famt"><input id="balInput" class="inp w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00"><span class="cur">€</span></span>
-          </label>
-          <label class="fclab">Stand vom<input id="balDate" class="inp fdinput" type="date"></label>
-          <label class="fclab">Geld kommt am<select id="incomeDay" class="inp fdinput"></select></label>
-        </div>
-        <div id="fcResult" class="fcres"></div>
-        <div id="sturzBox" class="sturz hidden">
-          <p class="sturztext" id="sturzText"></p>
-          <div class="sturzbtn">
-            <button id="sturzBuchen" class="btn-dark" type="button">Als Ausgabe nachbuchen</button>
-            <button id="sturzWeg" class="link-reset" type="button">Passt schon</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-head"><span class="dot dot--fixed"></span><h2 class="section-title">Einnahmen &amp; Fixkosten</h2></div>
-      <div class="panel">
-        <div class="income-row">
-          <label for="incomeInput">Monatliches Einkommen</label>
-          <div class="income-wrap"><input id="incomeInput" class="income-input num" type="number" step="0.01" inputmode="decimal"><span class="cur">€</span></div>
-        </div>
-        <div id="fixedList"></div>
-        <div class="addrow">
-          <input id="newFixedName" class="inp grow" type="text" placeholder="Neuer Posten">
-          <input id="newFixedAmount" class="inp w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00">
-          <button id="addFixedBtn" class="addbtn" aria-label="Fixposten hinzufügen">+</button>
-        </div>
-        <div class="fixscan">
-          <button id="fixScanBtn" class="btn-outline" type="button">📄 Fixkosten einlesen (Foto / PDF)</button>
-          <input id="fixScanFile" type="file" accept="image/*,application/pdf" style="display:none">
-          <p id="fixScanStatus" class="scanstatus"></p>
-          <div id="fixFound" class="fixfound hidden">
-            <p class="ffhead" id="ffHead">Gefundene Posten</p>
-            <div id="fixFoundList"></div>
-            <div class="ffactions">
-              <button id="ffApply" class="btn-dark" type="button">Ausgewählte übernehmen</button>
-              <button id="ffAll" class="btn-outline" type="button">Alle auswählen</button>
-              <button id="ffDrop" class="link-reset" type="button">Verwerfen</button>
-            </div>
-          </div>
-        </div>
-        <div class="total"><span class="total-label">Summe Fixkosten</span><span class="total-val num" id="fixedTotal">–</span></div>
-        <p class="fixnote" id="fixNote" style="display:none"></p>
-      </div>
-    </section>
 
     <section class="section">
       <div class="section-head"><span class="dot dot--vary"></span><h2 class="section-title">Variable Kosten &amp; Ausgabebuch</h2></div>
@@ -539,6 +488,69 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
         <div id="expList"></div>
         <div id="expEmpty" class="empty">Noch keine variablen Ausgaben in diesem Monat gebucht.</div>
         <div class="total total--v"><span class="total-label">Summe variable Ausgaben</span><span class="total-val num" id="variableTotal">–</span></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="panelFix" class="tabpanel">
+
+    <div class="cards">
+      <div class="card"><p class="card-label">Einnahmen</p><p class="card-value num c-emerald" id="cardIncome">–</p></div>
+      <div class="card card--fixed"><p class="card-label">Fixkosten</p><p class="card-value num c-fixed" id="cardFixed">–</p></div>
+      <div class="card card--vary"><p class="card-label">Variable Ausgaben</p><p class="card-value num c-vary" id="cardVariable">–</p></div>
+      <div class="card"><p class="card-label">Puffer</p><p class="card-value num" id="cardBuffer">–</p></div>
+    </div>
+
+    <section class="section">
+      <div class="section-head"><span class="dot dot--fixed"></span><h2 class="section-title">Einnahmen &amp; Fixkosten</h2></div>
+      <div class="panel">
+        <div class="income-row">
+          <label for="incomeInput">Monatliches Einkommen</label>
+          <div class="income-wrap"><input id="incomeInput" class="income-input num" type="number" step="0.01" inputmode="decimal"><span class="cur">€</span></div>
+        </div>
+        <div id="fixedList"></div>
+        <div class="addrow">
+          <input id="newFixedName" class="inp grow" type="text" placeholder="Neuer Posten">
+          <input id="newFixedAmount" class="inp w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00">
+          <button id="addFixedBtn" class="addbtn" aria-label="Fixposten hinzufügen">+</button>
+        </div>
+        <div class="fixscan">
+          <button id="fixScanBtn" class="btn-outline" type="button">📄 Fixkosten einlesen (Foto / PDF)</button>
+          <input id="fixScanFile" type="file" accept="image/*,application/pdf" style="display:none">
+          <p id="fixScanStatus" class="scanstatus"></p>
+          <div id="fixFound" class="fixfound hidden">
+            <p class="ffhead" id="ffHead">Gefundene Posten</p>
+            <div id="fixFoundList"></div>
+            <div class="ffactions">
+              <button id="ffApply" class="btn-dark" type="button">Ausgewählte übernehmen</button>
+              <button id="ffAll" class="btn-outline" type="button">Alle auswählen</button>
+              <button id="ffDrop" class="link-reset" type="button">Verwerfen</button>
+            </div>
+          </div>
+        </div>
+        <div class="total"><span class="total-label">Summe Fixkosten</span><span class="total-val num" id="fixedTotal">–</span></div>
+        <p class="fixnote" id="fixNote" style="display:none"></p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><span class="dot dot--fc"></span><h2 class="section-title">Wann wird es eng?</h2></div>
+      <div class="panel panel-pad">
+        <div class="fcline">
+          <label class="fclab">Kontostand
+            <span class="famt"><input id="balInput" class="inp w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00"><span class="cur">€</span></span>
+          </label>
+          <label class="fclab">Stand vom<input id="balDate" class="inp fdinput" type="date"></label>
+          <label class="fclab">Geld kommt am<select id="incomeDay" class="inp fdinput"></select></label>
+        </div>
+        <div id="fcResult" class="fcres"></div>
+        <div id="sturzBox" class="sturz hidden">
+          <p class="sturztext" id="sturzText"></p>
+          <div class="sturzbtn">
+            <button id="sturzBuchen" class="btn-dark" type="button">Als Ausgabe nachbuchen</button>
+            <button id="sturzWeg" class="link-reset" type="button">Passt schon</button>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -709,7 +721,7 @@ function monthShort(key) { const [y, m] = key.split("-").map(Number); return new
 
 let data = load();
 normalisiereStamm(data);
-if (!data.activeTab) data.activeTab = "overview";
+if (!data.activeTab) data.activeTab = "tag";
 if (!data.lastCategory) data.lastCategory = CATEGORIES[0].name;
 ensureMonth(data.currentMonth);
 let editingId = null;
@@ -736,7 +748,7 @@ function load() {
     }
   } catch (e) {}
   if (!months[currentMonth]) months[currentMonth] = freshMonth();
-  return { currentMonth, months, activeTab: "overview", lastCategory: CATEGORIES[0].name };
+  return { currentMonth, months, activeTab: "tag", lastCategory: CATEGORIES[0].name };
 }
 
 function freshMonth() {
@@ -789,6 +801,7 @@ function normalisiereStamm(d) {
   }
   if (!d.sturz || typeof d.sturz.differenz !== "number") d.sturz = null;
   if (!d.haendler || typeof d.haendler !== "object") d.haendler = {};
+  if (d.activeTab === "overview" || !["tag", "fix", "eval"].includes(d.activeTab)) d.activeTab = "tag";
   const std = Number(d.wochenstunden);
   d.wochenstunden = std > 0 && std <= 100 ? std : 40;
   d.zeitAn = !!d.zeitAn;
@@ -844,6 +857,7 @@ function render() {
   renderVorschau();
   renderSturz();
   renderZeit();
+  renderRest();
   renderStats();
   renderEval();
   applyTab(data.activeTab);
@@ -1202,16 +1216,20 @@ function escapeAttr(s) { return escapeHtml(s); }
 
 function goToMonth(key) { data.currentMonth = key; ensureMonth(key); render(); resetExpenseForm(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 
+const REITER = { tag: "panelTag", fix: "panelFix", eval: "panelEval" };
+const REITER_KNOPF = { tag: "tabBtnTag", fix: "tabBtnFix", eval: "tabBtnEval" };
 function applyTab(name) {
-  document.getElementById("panelOverview").classList.toggle("active", name === "overview");
-  document.getElementById("panelEval").classList.toggle("active", name === "eval");
-  document.getElementById("tabBtnOverview").classList.toggle("active", name === "overview");
-  document.getElementById("tabBtnEval").classList.toggle("active", name === "eval");
+  if (!REITER[name]) name = "tag";
+  Object.keys(REITER).forEach(k => {
+    document.getElementById(REITER[k]).classList.toggle("active", k === name);
+    document.getElementById(REITER_KNOPF[k]).classList.toggle("active", k === name);
+  });
 }
 function switchTab(name) { data.activeTab = name; applyTab(name); renderEval(); save(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 
-document.getElementById("tabBtnOverview").addEventListener("click", () => switchTab("overview"));
-document.getElementById("tabBtnEval").addEventListener("click", () => switchTab("eval"));
+Object.keys(REITER_KNOPF).forEach(k => {
+  document.getElementById(REITER_KNOPF[k]).addEventListener("click", () => switchTab(k));
+});
 document.getElementById("prevMonth").addEventListener("click", () => goToMonth(shiftMonth(data.currentMonth, -1)));
 document.getElementById("nextMonth").addEventListener("click", () => goToMonth(shiftMonth(data.currentMonth, 1)));
 document.getElementById("monthInput").addEventListener("change", e => { if (e.target.value) goToMonth(e.target.value); });
@@ -2033,6 +2051,47 @@ document.getElementById("azAlle").addEventListener("click", () => {
 });
 document.getElementById("azWeg").addEventListener("click", () => { versteckeAuszug(); setScanStatus(""); });
 
+// --- Kurzuebersicht: was heute noch zur Verfuegung steht ---
+function renderRest() {
+  const el = document.getElementById("restSatz");
+  if (!el) return;
+  const m = cur(), key = data.currentMonth, heute = todayISO();
+  const rest = buffer(m), tage = daysInMonth(key), heutigerMonat = heute.slice(0, 7);
+
+  let verbleibend;
+  if (key === heutigerMonat) verbleibend = tage - Number(heute.slice(8, 10)) + 1;   // heute zählt mit
+  else if (key > heutigerMonat) verbleibend = tage;
+  else verbleibend = 0;
+
+  let satz, art = "";
+  if (!(Number(m.income) || 0) && !m.fixed.length && !m.variable.length) {
+    satz = "Trag im Reiter <b>Fix</b> dein Einkommen und deine Fixkosten ein – dann steht hier, was dir je Tag bleibt.";
+  } else if (rest < 0) {
+    art = "leer";
+    satz = verbleibend > 0
+      ? "Für die restlichen <b>" + verbleibend + (verbleibend === 1 ? " Tag</b>" : " Tage</b>") + " ist nichts mehr da – du liegst <b>" + fmt(-rest) + "</b> über den Einnahmen."
+      : "Der Monat schließt mit <b>" + fmt(-rest) + "</b> über den Einnahmen.";
+  } else if (rest === 0) {
+    art = "knapp";
+    satz = "Dein Geld ist für diesen Monat vollständig verplant – es bleibt nichts übrig.";
+  } else if (verbleibend === 0) {
+    satz = "Der Monat ist abgeschlossen – übrig geblieben sind <b>" + fmt(rest) + "</b>.";
+  } else {
+    const proTag = rest / verbleibend;
+    if (proTag < 5) art = "knapp";
+    satz = "Noch <b>" + verbleibend + (verbleibend === 1 ? " Tag</b>" : " Tage</b>") +
+           " – dir bleiben <b>" + fmt(rest) + "</b>, das sind <b>" + fmt(proTag) + " pro Tag</b>.";
+    if (m.budgetEnabled && Number(m.dailyBudget) > 0) {
+      const b = Number(m.dailyBudget);
+      satz += proTag >= b
+        ? " Dein Tagesbudget von " + fmt(b) + " ist damit gedeckt."
+        : " Dein Tagesbudget von " + fmt(b) + " liegt darüber.";
+    }
+  }
+  el.innerHTML = satz;
+  el.className = "restsatz " + art;
+}
+
 // --- Schnell erfassen: eine Zeile, ein Satz ---
 // Reine, testbare Zerlegung von "12,50 Rewe Lebensmittel"
 function parseSchnell(text) {
@@ -2437,7 +2496,7 @@ function importBackup(file) {
     if (!parsed || typeof parsed !== "object" || !parsed.months || typeof parsed.months !== "object") { setBackupStatus("Ungültige Backup-Datei.", true); return; }
     if (!confirm("Aktuelle Daten werden durch das Backup ersetzt. Fortfahren?")) return;
     data = normalisiereMonate(parsed);
-    if (!data.activeTab) data.activeTab = "overview";
+    if (!data.activeTab) data.activeTab = "tag";
     if (!data.lastCategory) data.lastCategory = CATEGORIES[0].name;
     const ks = Object.keys(data.months).sort();
     if (!data.currentMonth || !data.months[data.currentMonth]) data.currentMonth = ks.length ? ks[ks.length - 1] : monthKey(new Date());

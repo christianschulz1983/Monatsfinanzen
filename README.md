@@ -6,7 +6,12 @@ Kein Server, kein Konto, keine Installation.
 
 ## Funktionen
 
-**Übersicht**
+**Drei Reiter**
+- Täglich: Puffer, „was bleibt pro Tag", Schnell-Erfassung und Ausgabebuch
+- Fix: Einkommen, Fixkosten mit Fälligkeiten, Kennzahlen, 90-Tage-Vorschau, Kassensturz
+- Auswertung: Kategorien, Durchschnitte, Verlauf, Jahr, Auffälligkeiten, Rücklagen, Backup
+
+**Täglich**
 - Monatliches Einkommen und Fixkosten selbst anlegen, Summe wird laufend gerechnet
 - Fälligkeitsdatum und Rhythmus je Fixposten (monatlich bis jährlich); wahlweise auf die
   Monate verteilt, nur im Fälligkeitsmonat gebucht, beides zugleich (Anteil im Puffer,
