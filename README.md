@@ -28,9 +28,11 @@ Kein Server, kein Konto, keine Installation.
 - Schnell-Erfassung: Betrag, Zweck und Kategorie in einer Zeile („12,50 Rewe Lebensmittel"),
   Diktat über die Tastatur möglich; Datum und Kategorie daneben zum Nachbessern, eine
   von Hand gewählte Kategorie wird nicht überschrieben
-- Kinder als zweite Ebene quer zu den Kategorien: Vornamen anlegen, jede Ausgabe zuordnen
-  (auch per Name in der Schnellzeile), eigene Auswertung mit Anteil, Aufteilung je Kind,
+- Kinder als zweite Ebene quer zu den Kategorien: Vornamen anlegen, beim Buchen ein Kästchen
+  (oder den Vornamen in der Schnellzeile), eigene Auswertung mit Anteil, Aufteilung je Kind,
   Kategorien dahinter, Monatsschnitt und Jahressumme
+- Kilometer je Ausgabe (optional, auch als „340km" in der Schnellzeile): Anteil der Fahrten
+  für die Kinder, Kosten je Kilometer und der daraus abgeleitete Kostenanteil
 - „Zuletzt gebucht" mit Löschknopf je Zeile
 - Kontoauszug als Ausgaben-Import: Kartenzahlungen und Lastschriften mit Datum, Betrag und
   geratener Kategorie; bereits erfasste Buchungen und Fixposten werden gekennzeichnet
