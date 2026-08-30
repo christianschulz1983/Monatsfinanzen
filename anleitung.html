@@ -94,23 +94,53 @@ td:first-child{white-space:nowrap;font-weight:600}
     <div class="section-head"><span class="dot d3"></span><h2>Die drei Reiter</h2></div>
     <div class="panel">
       <table>
-        <tr><td>Täglich</td><td>Der Reiter für den Alltag: der verbleibende Puffer, ein Satz dazu,
-            wie viel dir <b>pro Tag</b> noch bleibt, und darunter alles zum Buchen von Ausgaben.
-            Hier bist du fast immer.</td></tr>
-        <tr><td>Fix</td><td>Einmal im Monat oder seltener: Einkommen, Fixkosten samt Fälligkeiten,
-            die vier Kennzahlen und die Vorschau „Wann wird es eng?" mit dem Kassensturz.</td></tr>
-        <tr><td>Auswertung</td><td>Zum Nachschauen: Kategorien, Durchschnitte, Verlauf, Jahr,
+        <tr><td>Heute</td><td>Der Startbildschirm: <b>Was kann ich heute noch ausgeben, was diesen
+            Monat?</b> Dazu ein Satz, wie es gerade läuft, ein Hinweis auf anstehende Rechnungen –
+            und direkt darunter die Erfassung: Schnellzeile, Belegfoto, Kontoauszug. Mehr nicht.</td></tr>
+        <tr><td>Monat</td><td>Zum Nachsehen und Pflegen: jede einzelne Ausgabe des Monats,
+            Einnahmen und Fixkosten ändern, geplante Ausgaben wie TÜV oder Urlaub, und die
+            Vorschau „Wann wird es eng?" mit dem Kassensturz.</td></tr>
+        <tr><td>Statistik</td><td>Wenn du magst: Kategorien, Durchschnitte, Verlauf, Jahr,
             Auffälligkeiten, Rücklagen, Backup.</td></tr>
       </table>
+      <p class="hint">Die Erfassung per Foto und Kontoauszug gibt es <b>nur</b> im Reiter Heute –
+         damit du nie überlegen musst, wo sie war.</p>
       <p class="hint">Der zuletzt geöffnete Reiter wird gemerkt – beim nächsten Start bist du
          wieder dort, wo du aufgehört hast.</p>
     </div>
   </section>
 
   <section>
+    <div class="section-head"><span class="dot d1"></span><h2>Der Startbildschirm</h2></div>
+    <div class="panel">
+      <p>Oben zwei Zahlen: <b>Heute noch</b> und <b>Diesen Monat</b>. „Heute noch" ist das, was
+         übrig bleibt, geteilt durch die verbleibenden Tage – es rechnet sich <b>jeden Tag neu</b>.
+         Gibst du heute nichts aus, hast du morgen etwas mehr.</p>
+      <p>Darunter ein Satz, der aus deinen Zahlen folgt, nicht aus guter Laune:</p>
+      <table>
+        <tr><td>Grün</td><td>„Weiter so: Du liegst 18 % unter deinem Schnitt. Bleibt es dabei, sind
+            zum Monatsende rund 240 € übrig."</td></tr>
+        <tr><td>Blau</td><td>„Du liegst im Plan – 24,80 € pro Tag bis zum 31."</td></tr>
+        <tr><td>Gelb</td><td>„Sei vorsichtig: Bei diesem Tempo fehlen zum Monatsende 85 €. Rund
+            3 € pro Tag weniger würden reichen."</td></tr>
+        <tr><td>Rot</td><td>„Du liegst 85 € über deinen Einnahmen."</td></tr>
+      </table>
+      <p>Darunter steht, was noch vom Konto geht: die Fixkosten, die diesen Monat noch fällig
+         werden, und alles, was du unter <b>Geplante Ausgaben</b> eingetragen hast.</p>
+
+      <h3>Geplante Ausgaben</h3>
+      <p>Im Reiter <b>Monat</b>: Bezeichnung, Datum, Betrag – <i>TÜV, 14.10., 150 €</i>. Anders als
+         Fixkosten wiederholen sie sich nicht. Sie werden vom verfügbaren Geld abgezogen, im
+         Rückhaltehinweis genannt und in der 90-Tage-Vorschau am richtigen Tag abgebucht.</p>
+      <p class="hint">Das ist die Lücke, die eine Haushaltsplanung sonst reißt: Miete und
+         Versicherung kennt sie, den Urlaub im Juli und die neue Waschmaschine nicht.</p>
+    </div>
+  </section>
+
+  <section>
     <div class="section-head"><span class="dot d2"></span><h2>Einmal einrichten</h2></div>
     <div class="panel">
-      <p>Im Reiter <b>Fix</b>, Abschnitt „Einnahmen &amp; Fixkosten":</p>
+      <p>Im Reiter <b>Monat</b>, Abschnitt „Einnahmen &amp; Fixkosten":</p>
       <ol>
         <li><b>Monatliches Einkommen</b> eintragen.</li>
         <li><b>Fixkosten</b> anlegen: Bezeichnung, Betrag, dann <kbd>+</kbd>.
@@ -170,7 +200,7 @@ td:first-child{white-space:nowrap;font-weight:600}
   <section>
     <div class="section-head"><span class="dot d3"></span><h2>Laufend erfassen</h2></div>
     <div class="panel">
-      <p>Alles im Reiter <b>Täglich</b>, Abschnitt „Variable Kosten &amp; Ausgabebuch":</p>
+      <p>Die drei schnellen Wege stehen im Reiter <b>Heute</b>. Das ausführliche Formular und die vollständige Liste findest du im Reiter <b>Monat</b>.</p>
       <h3>Schnell erfassen – der kürzeste Weg</h3>
       <p>Ganz oben steht ein einzelnes Feld. Dort tippst du <b>Betrag, Zweck und Kategorie in einer
          Zeile</b>, die Reihenfolge ist egal:</p>
@@ -246,7 +276,7 @@ td:first-child{white-space:nowrap;font-weight:600}
       <p>Mit <kbd>‹</kbd> und <kbd>›</kbd> oben blätterst du durch die Monate; das Feld dazwischen
          springt direkt zu einem bestimmten. Alles, was du einträgst, gehört zum
          <b>angezeigten</b> Monat – beim Nachtragen also erst den richtigen Monat wählen.</p>
-      <p>Im Reiter <b>Auswertung</b> wird nichts eingetragen, dort steht nur, was sich aus den
+      <p>Im Reiter <b>Statistik</b> wird nichts eingetragen, dort steht nur, was sich aus den
          Zahlen ergibt: verfügbares Budget, Ausgaben nach Kategorie als Ring, Durchschnitt je
          Monat und Tag, Veränderung zum Vormonat, Verlauf über bis zu zwölf Monate und die
          Jahresauswertung mit teuerstem und günstigstem Monat.</p>
@@ -266,7 +296,7 @@ td:first-child{white-space:nowrap;font-weight:600}
   <section>
     <div class="section-head"><span class="dot d6"></span><h2>Wann wird es eng?</h2></div>
     <div class="panel">
-      <p>Der Abschnitt unten im Reiter <b>Fix</b> rechnet <b>90 Tage voraus</b>. Dafür brauchst du
+      <p>Der Abschnitt unten im Reiter <b>Monat</b> rechnet <b>90 Tage voraus</b>. Dafür brauchst du
          drei Angaben, die einmal gesetzt bleiben:</p>
       <ul>
         <li><b>Kontostand</b> – der Betrag, der jetzt auf dem Konto ist</li>
@@ -306,7 +336,7 @@ td:first-child{white-space:nowrap;font-weight:600}
          und niemand außer dir kommt daran. Die Kehrseite: Ein geleerter Browserspeicher nimmt
          die Erfassung mit.</p>
       <h3>Backup</h3>
-      <p>Reiter <b>Auswertung</b> → „Daten &amp; Backup" → <kbd>Backup exportieren</kbd> legt alle
+      <p>Reiter <b>Statistik</b> → „Daten &amp; Backup" → <kbd>Backup exportieren</kbd> legt alle
          Monate als Datei ab (auf dem iPhone in „Dateien", von dort in iCloud oder per Mail
          sichern). <kbd>Backup importieren</kbd> liest sie wieder ein.</p>
       <h3>Zwischen Handy und Rechner</h3>

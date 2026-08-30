@@ -7,11 +7,13 @@ Kein Server, kein Konto, keine Installation.
 ## Funktionen
 
 **Drei Reiter**
-- Täglich: Puffer, „was bleibt pro Tag", Schnell-Erfassung und Ausgabebuch
-- Fix: Einkommen, Fixkosten mit Fälligkeiten, Kennzahlen, 90-Tage-Vorschau, Kassensturz
-- Auswertung: Kategorien, Durchschnitte, Verlauf, Jahr, Auffälligkeiten, Rücklagen, Backup
+- Heute: was heute und diesen Monat noch zur Verfügung steht, ein Statussatz aus den eigenen
+  Zahlen, Hinweis auf anstehende Zahlungen – und die Erfassung (Schnellzeile, Beleg, Auszug)
+- Monat: jede Ausgabe des Monats, Einnahmen und Fixkosten, geplante Einmalausgaben,
+  90-Tage-Vorschau, Kassensturz
+- Statistik: Kategorien, Durchschnitte, Verlauf, Jahr, Auffälligkeiten, Rücklagen, Backup
 
-**Täglich**
+**Erfassen**
 - Monatliches Einkommen und Fixkosten selbst anlegen, Summe wird laufend gerechnet
 - Fälligkeitsdatum und Rhythmus je Fixposten (monatlich bis jährlich); wahlweise auf die
   Monate verteilt, nur im Fälligkeitsmonat gebucht, beides zugleich (Anteil im Puffer,
@@ -19,6 +21,8 @@ Kein Server, kein Konto, keine Installation.
 - Fixkosten aus Kontoauszug, Schreiben oder Aufstellung einlesen (PDF oder Foto):
   erkannte Posten erscheinen als Vorschlagsliste, übernommen wird nur das Angehakte;
   ein bereits bekannter Posten bekommt den neuen Betrag statt eines zweiten Eintrags
+- Geplante Einmalausgaben (TÜV, Urlaub, Reparatur) mit Datum; mindern das verfügbare Geld
+  und erscheinen in der Vorschau
 - Schnell-Erfassung: Betrag, Zweck und Kategorie in einer Zeile („12,50 Rewe Lebensmittel"),
   Diktat über die Tastatur möglich
 - Kontoauszug als Ausgaben-Import: Kartenzahlungen und Lastschriften mit Datum, Betrag und

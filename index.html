@@ -304,7 +304,28 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .scanthumb{width:56px;height:56px;object-fit:cover;border-radius:8px;box-shadow:0 0 0 1px var(--slate200)}
 .scanstatus{font-size:13px;color:var(--slate500);margin:10px 0 0;min-height:18px}
 .zeithint{font-size:13px;color:var(--vary700);margin:8px 0 0;min-height:0}
-.restbox{margin-top:-18px;margin-bottom:32px}
+.heute{margin-bottom:32px}
+.heutekarte{border-radius:24px;padding:24px;color:#fff;box-shadow:0 10px 25px -5px rgba(148,163,184,.4);transition:background .3s}
+@media(min-width:640px){.heutekarte{padding:30px}}
+.heutekarte.gut{background:linear-gradient(135deg,#10b981,#0d9488)}
+.heutekarte.neutral{background:linear-gradient(135deg,#0ea5e9,#4f46e5)}
+.heutekarte.warn{background:linear-gradient(135deg,#f59e0b,#ea580c)}
+.heutekarte.neg{background:linear-gradient(135deg,#dc2626,#be123c)}
+.heutezahlen{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.heutelab{font-size:13px;opacity:.85;margin:0}
+.heutewert{font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;letter-spacing:-.01em;margin:2px 0 0;line-height:1.1}
+@media(min-width:640px){.heutewert{font-size:46px}}
+.heutemonat{text-align:right}
+.heutemonat .heutewert{font-size:24px;opacity:.92}
+.heutesatz{margin:18px 0 0;font-size:15px;line-height:1.55;opacity:.95}
+.heutesatz b{font-weight:600}
+.heuterueck{margin:12px 2px 0;font-size:13px;color:var(--slate500);line-height:1.5}
+.zuletzt-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--slate100);font-size:14px}
+.zuletzt-row:first-child{border-top:none}
+.zuletzt-datum{flex:none;width:52px;color:var(--slate400);font-size:12px}
+.zuletzt-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gepdatum{flex:none;width:82px;color:var(--slate500);font-size:13px}
+.gepvorbei{opacity:.5}
 .restsatz{font-size:15px;margin:0;line-height:1.55;color:var(--ink)}
 .restsatz b{font-weight:600}
 .restsatz.knapp{color:var(--amber)} .restsatz.leer{color:var(--red)}
@@ -383,37 +404,28 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
   </div>
 
   <div class="tabs">
-    <button id="tabBtnTag" class="tab active">Täglich</button>
-    <button id="tabBtnFix" class="tab">Fix</button>
-    <button id="tabBtnEval" class="tab">Auswertung</button>
+    <button id="tabBtnHeute" class="tab active">Heute</button>
+    <button id="tabBtnMonat" class="tab">Monat</button>
+    <button id="tabBtnEval" class="tab">Statistik</button>
   </div>
 
   <!-- ===================== ÜBERSICHT ===================== -->
-  <div id="panelTag" class="tabpanel active">
+  <div id="panelHeute" class="tabpanel active">
 
-    <section id="heroCard" class="hero pos">
-      <div class="hero-top">
-        <div>
-          <p class="hero-label" id="heroLabel">Verbleibender Puffer</p>
-          <p class="hero-value num" id="bufferValue">–</p>
+    <div class="heute">
+      <div class="heutekarte" id="heuteKarte">
+        <div class="heutezahlen">
+          <div><p class="heutelab">Heute noch</p><p class="heutewert num" id="heuteTag">–</p></div>
+          <div class="heutemonat"><p class="heutelab">Diesen Monat</p><p class="heutewert num" id="heuteMonat">–</p></div>
         </div>
-        <div class="hero-mini num">
-          <p><span id="incomeMini">–</span> Einnahmen</p>
-          <p class="dim">– <span id="spentMini">–</span> Ausgaben</p>
-        </div>
+        <p class="heutesatz" id="heuteSatz"></p>
       </div>
-      <div class="track"><div id="usageBar" class="track-fill" style="width:0%"></div></div>
-      <p class="usage num" id="usageLabel"></p>
-    </section>
-
-    <div class="panel panel-pad restbox">
-      <p class="restsatz" id="restSatz">–</p>
+      <p class="heuterueck" id="heuteRueck"></p>
     </div>
 
     <section class="section">
-      <div class="section-head"><span class="dot dot--vary"></span><h2 class="section-title">Variable Kosten &amp; Ausgabebuch</h2></div>
-
-      <div class="panel panel-pad">
+      <div class="section-head"><span class="dot dot--vary"></span><h2 class="section-title">Ausgabe erfassen</h2></div>
+<div class="panel panel-pad">
         <label class="schnelllab" for="schnellInput">Schnell erfassen</label>
         <div class="schnellzeile">
           <input id="schnellInput" class="inp inp--v grow" type="text" inputmode="text"
@@ -424,13 +436,6 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
       </div>
 
       <div class="panel panel-pad">
-        <div class="expform">
-          <div class="field f-date"><label for="expDate">Datum</label><input id="expDate" class="inp inp--v" type="date"></div>
-          <div class="field f-amount"><label for="expAmount">Betrag (€)</label><input id="expAmount" class="inp inp--v num" type="number" step="0.01" inputmode="decimal" placeholder="0,00"></div>
-          <div class="field f-cat"><label for="expCat">Kategorie</label><select id="expCat" class="inp inp--v"></select></div>
-          <div class="field f-desc"><label for="expDesc">Verwendungszweck</label><input id="expDesc" class="inp inp--v" type="text" placeholder="optional, z. B. Rewe, Aral"></div>
-          <button id="addExpBtn" class="expbtn">Ausgabe buchen</button>
-        </div>
         <div class="scanrow">
           <button id="scanBtn" class="btn-outline" type="button">📷 Beleg scannen (Foto / PDF)</button>
           <input id="scanFile" type="file" accept="image/*,application/pdf" style="display:none">
@@ -462,37 +467,30 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="panel panel-pad">
-        <label class="toggle"><input id="budgetToggle" type="checkbox"><span>Tagespauschal-Budget anzeigen</span></label>
-        <div id="budgetPanel" class="budget-panel hidden">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="lbl">Budget pro Tag</span>
-            <input id="dailyBudget" class="inp inp--v w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00">
-            <span class="lbl">€</span>
-          </div>
-          <p class="budget-info num" id="budgetInfo"></p>
-        </div>
-        <label class="toggle" style="margin-top:14px"><input id="zeitToggle" type="checkbox"><span>Preise auch in Arbeitszeit zeigen</span></label>
-        <div id="zeitPanel" class="budget-panel hidden">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span class="lbl">Wochenstunden</span>
-            <input id="wochenstunden" class="inp inp--v w-amt num" type="number" step="0.5" inputmode="decimal" placeholder="40">
-            <span class="lbl">h</span>
-          </div>
-          <p class="budget-info num" id="zeitInfo"></p>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div id="expList"></div>
-        <div id="expEmpty" class="empty">Noch keine variablen Ausgaben in diesem Monat gebucht.</div>
-        <div class="total total--v"><span class="total-label">Summe variable Ausgaben</span><span class="total-val num" id="variableTotal">–</span></div>
-      </div>
+    <section class="section" id="secZuletzt">
+      <div class="section-head"><span class="dot dot--stat"></span><h2 class="section-title">Zuletzt gebucht</h2></div>
+      <div class="panel"><div id="zuletztListe"></div></div>
     </section>
   </div>
 
-  <div id="panelFix" class="tabpanel">
+  <div id="panelMonat" class="tabpanel">
+
+    <section id="heroCard" class="hero pos">
+      <div class="hero-top">
+        <div>
+          <p class="hero-label" id="heroLabel">Verbleibender Puffer</p>
+          <p class="hero-value num" id="bufferValue">–</p>
+        </div>
+        <div class="hero-mini num">
+          <p><span id="incomeMini">–</span> Einnahmen</p>
+          <p class="dim">– <span id="spentMini">–</span> Ausgaben</p>
+        </div>
+      </div>
+      <div class="track"><div id="usageBar" class="track-fill" style="width:0%"></div></div>
+      <p class="usage num" id="usageLabel"></p>
+    </section>
 
     <div class="cards">
       <div class="card"><p class="card-label">Einnahmen</p><p class="card-value num c-emerald" id="cardIncome">–</p></div>
@@ -530,6 +528,60 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
         </div>
         <div class="total"><span class="total-label">Summe Fixkosten</span><span class="total-val num" id="fixedTotal">–</span></div>
         <p class="fixnote" id="fixNote" style="display:none"></p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><span class="dot dot--fc"></span><h2 class="section-title">Geplante Ausgaben</h2></div>
+      <div class="panel">
+        <div id="geplantListe"></div>
+        <div class="addrow">
+          <input id="newGepName" class="inp grow" type="text" placeholder="z. B. TÜV, Urlaub">
+          <input id="newGepDatum" class="inp" type="date">
+          <input id="newGepBetrag" class="inp w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00">
+          <button id="addGepBtn" class="addbtn" aria-label="Geplante Ausgabe hinzufügen">+</button>
+        </div>
+        <p class="fixnote" id="gepNote"></p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><span class="dot dot--vary"></span><h2 class="section-title">Variable Kosten &amp; Ausgabebuch</h2></div>
+<div class="panel panel-pad">
+        <div class="expform">
+          <div class="field f-date"><label for="expDate">Datum</label><input id="expDate" class="inp inp--v" type="date"></div>
+          <div class="field f-amount"><label for="expAmount">Betrag (€)</label><input id="expAmount" class="inp inp--v num" type="number" step="0.01" inputmode="decimal" placeholder="0,00"></div>
+          <div class="field f-cat"><label for="expCat">Kategorie</label><select id="expCat" class="inp inp--v"></select></div>
+          <div class="field f-desc"><label for="expDesc">Verwendungszweck</label><input id="expDesc" class="inp inp--v" type="text" placeholder="optional, z. B. Rewe, Aral"></div>
+          <button id="addExpBtn" class="expbtn">Ausgabe buchen</button>
+        </div>
+      </div>
+
+<div class="panel panel-pad">
+        <label class="toggle"><input id="budgetToggle" type="checkbox"><span>Tagespauschal-Budget anzeigen</span></label>
+        <div id="budgetPanel" class="budget-panel hidden">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="lbl">Budget pro Tag</span>
+            <input id="dailyBudget" class="inp inp--v w-amt num" type="number" step="0.01" inputmode="decimal" placeholder="0,00">
+            <span class="lbl">€</span>
+          </div>
+          <p class="budget-info num" id="budgetInfo"></p>
+        </div>
+        <label class="toggle" style="margin-top:14px"><input id="zeitToggle" type="checkbox"><span>Preise auch in Arbeitszeit zeigen</span></label>
+        <div id="zeitPanel" class="budget-panel hidden">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="lbl">Wochenstunden</span>
+            <input id="wochenstunden" class="inp inp--v w-amt num" type="number" step="0.5" inputmode="decimal" placeholder="40">
+            <span class="lbl">h</span>
+          </div>
+          <p class="budget-info num" id="zeitInfo"></p>
+        </div>
+      </div>
+
+<div class="panel">
+        <div id="expList"></div>
+        <div id="expEmpty" class="empty">Noch keine variablen Ausgaben in diesem Monat gebucht.</div>
+        <div class="total total--v"><span class="total-label">Summe variable Ausgaben</span><span class="total-val num" id="variableTotal">–</span></div>
       </div>
     </section>
 
@@ -699,6 +751,7 @@ function categoryColor(name) { return CATEGORY_COLOR[name] || "#64748b"; }
 
 const PDFJS_WORKER = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 let pendingReceipt = null;
+let schnellDatum = null;          // vom Beleg erkanntes Datum fuer die Schnellzeile
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
@@ -721,7 +774,7 @@ function monthShort(key) { const [y, m] = key.split("-").map(Number); return new
 
 let data = load();
 normalisiereStamm(data);
-if (!data.activeTab) data.activeTab = "tag";
+if (!data.activeTab) data.activeTab = "heute";
 if (!data.lastCategory) data.lastCategory = CATEGORIES[0].name;
 ensureMonth(data.currentMonth);
 let editingId = null;
@@ -748,7 +801,7 @@ function load() {
     }
   } catch (e) {}
   if (!months[currentMonth]) months[currentMonth] = freshMonth();
-  return { currentMonth, months, activeTab: "tag", lastCategory: CATEGORIES[0].name };
+  return { currentMonth, months, activeTab: "heute", lastCategory: CATEGORIES[0].name };
 }
 
 function freshMonth() {
@@ -801,7 +854,12 @@ function normalisiereStamm(d) {
   }
   if (!d.sturz || typeof d.sturz.differenz !== "number") d.sturz = null;
   if (!d.haendler || typeof d.haendler !== "object") d.haendler = {};
-  if (d.activeTab === "overview" || !["tag", "fix", "eval"].includes(d.activeTab)) d.activeTab = "tag";
+  if (!Array.isArray(d.geplant)) d.geplant = [];
+  d.geplant = d.geplant.filter(g => g && g.name).map(g => ({
+    id: g.id || uid(), name: String(g.name), amount: Number(g.amount) || 0,
+    date: g.date || "", erledigt: !!g.erledigt,
+  }));
+  if (!["heute", "monat", "eval"].includes(d.activeTab)) d.activeTab = "heute";
   const std = Number(d.wochenstunden);
   d.wochenstunden = std > 0 && std <= 100 ? std : 40;
   d.zeitAn = !!d.zeitAn;
@@ -857,7 +915,8 @@ function render() {
   renderVorschau();
   renderSturz();
   renderZeit();
-  renderRest();
+  renderHeute();
+  renderGeplant();
   renderStats();
   renderEval();
   applyTab(data.activeTab);
@@ -1216,10 +1275,10 @@ function escapeAttr(s) { return escapeHtml(s); }
 
 function goToMonth(key) { data.currentMonth = key; ensureMonth(key); render(); resetExpenseForm(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 
-const REITER = { tag: "panelTag", fix: "panelFix", eval: "panelEval" };
-const REITER_KNOPF = { tag: "tabBtnTag", fix: "tabBtnFix", eval: "tabBtnEval" };
+const REITER = { heute: "panelHeute", monat: "panelMonat", eval: "panelEval" };
+const REITER_KNOPF = { heute: "tabBtnHeute", monat: "tabBtnMonat", eval: "tabBtnEval" };
 function applyTab(name) {
-  if (!REITER[name]) name = "tag";
+  if (!REITER[name]) name = "heute";
   Object.keys(REITER).forEach(k => {
     document.getElementById(REITER[k]).classList.toggle("active", k === name);
     document.getElementById(REITER_KNOPF[k]).classList.toggle("active", k === name);
@@ -1252,7 +1311,7 @@ document.getElementById("expDesc").addEventListener("keydown", e => { if (e.key 
 document.getElementById("expAmount").addEventListener("keydown", e => { if (e.key === "Enter") addExpense(); });
 document.getElementById("scanBtn").addEventListener("click", () => document.getElementById("scanFile").click());
 document.getElementById("scanFile").addEventListener("change", e => { const f = e.target.files[0]; if (f) handleReceiptFile(f); e.target.value = ""; });
-document.getElementById("scanRemove").addEventListener("click", () => { pendingReceipt = null; hideReceiptPreview(); versteckeBelegPosten(); setScanStatus(""); });
+document.getElementById("scanRemove").addEventListener("click", () => { pendingReceipt = null; schnellDatum = null; hideReceiptPreview(); versteckeBelegPosten(); setScanStatus(""); });
 document.getElementById("lightbox").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
 document.getElementById("editSave").addEventListener("click", saveEdit);
 document.getElementById("editCancel").addEventListener("click", closeEdit);
@@ -1423,8 +1482,13 @@ async function handleReceiptFile(file) {
     const result = await Tesseract.recognize(ocrSource, "deu");
     const parsed = parseReceipt(result && result.data && result.data.text);
     let msg = "Beleg angehängt.";
-    if (parsed.amount != null) { document.getElementById("expAmount").value = String(parsed.amount); msg += " Betrag: " + fmt(parsed.amount) + "."; }
-    if (parsed.date) { document.getElementById("expDate").value = parsed.date; msg += " Datum erkannt."; }
+    if (parsed.amount != null) {
+      const feld = document.getElementById("schnellInput");
+      feld.value = String(parsed.amount).replace(".", ",") + (feld.value.trim() ? " " + feld.value.trim() : "");
+      zeigeSchnellVorschau();
+      msg += " Betrag: " + fmt(parsed.amount) + ".";
+    }
+    if (parsed.date) { schnellDatum = parsed.date; msg += " Datum erkannt."; }
     if (parsed.amount == null && !parsed.date) msg += " Betrag/Datum nicht automatisch erkannt.";
     const posten = parseReceiptItems(result && result.data && result.data.text);
     zeigeBelegPosten(posten);
@@ -1682,6 +1746,13 @@ function vorschau() {
         saldo -= z.betrag;
         if (iso >= heuteISO) zahlungen.push({ iso, name: z.name, betrag: z.betrag });
       });
+      (data.geplant || []).forEach(g => {                       // einmalige geplante Ausgaben
+        if (g.erledigt || g.date !== iso) return;
+        const b = Number(g.amount) || 0;
+        if (b <= 0) return;
+        saldo -= b;
+        if (iso >= heuteISO) zahlungen.push({ iso, name: g.name, betrag: b });
+      });
       // Vergangene Tage: was wirklich gebucht wurde. Heute: der groessere von beiden,
       // sonst faellt der angebrochene Tag unter den Tisch. Kuenftige Tage: die Schaetzung.
       const gebucht = echt[iso] || 0;
@@ -1691,6 +1762,7 @@ function vorschau() {
     if (iso >= heuteISO && (!min || saldo < min.saldo)) min = { iso, saldo };
     d.setDate(d.getDate() + 1);
   }
+  zahlungen.sort((a, b) => (a.iso < b.iso ? -1 : 1));
   return { punkte, min, zahlungen: zahlungen.slice(0, 6), proTag, startISO, heuteISO, veraltet: vorlauf > 3 };
 }
 
@@ -2051,45 +2123,152 @@ document.getElementById("azAlle").addEventListener("click", () => {
 });
 document.getElementById("azWeg").addEventListener("click", () => { versteckeAuszug(); setScanStatus(""); });
 
-// --- Kurzuebersicht: was heute noch zur Verfuegung steht ---
-function renderRest() {
-  const el = document.getElementById("restSatz");
-  if (!el) return;
+// --- Geplante Einmalausgaben (TUEV, Urlaub, Reparatur) ---
+function geplantOffen(abISO, bisISO) {
+  return (data.geplant || []).filter(g => !g.erledigt && g.date && g.date >= abISO && g.date <= bisISO);
+}
+function geplantSumme(liste) { return liste.reduce((s, g) => s + (Number(g.amount) || 0), 0); }
+
+function renderGeplant() {
+  const box = document.getElementById("geplantListe");
+  if (!box) return;
+  const heute = todayISO();
+  const liste = [...(data.geplant || [])].sort((a, b) => (a.date < b.date ? -1 : 1));
+  box.innerHTML = liste.length ? "" : '<p class="muted" style="font-size:14px;margin:0 0 4px;padding:10px 16px">Noch nichts geplant – TÜV, Urlaub, eine anstehende Reparatur.</p>';
+  liste.forEach(g => {
+    const vorbei = g.date && g.date < heute;
+    const row = document.createElement("div");
+    row.className = "frow" + (vorbei || g.erledigt ? " gepvorbei" : "");
+    row.innerHTML =
+      '<span class="gepdatum num">' + (g.date ? dateFmt.format(new Date(g.date + "T12:00:00")).replace(/\.\d{4}$/, ".") : "ohne Datum") + '</span>' +
+      '<span class="fnamewrap"><span style="font-size:14px">' + escapeHtml(g.name) + '</span>' +
+        (vorbei ? '<span class="fmarke aus">vorbei</span>' : "") + '</span>' +
+      '<span class="famt num" style="font-weight:600">' + fmt(g.amount) + '</span>' +
+      '<button class="del" data-gepdel="' + g.id + '" aria-label="Löschen">✕</button>';
+    box.appendChild(row);
+  });
+  box.querySelectorAll("[data-gepdel]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      data.geplant = data.geplant.filter(x => x.id !== btn.dataset.gepdel);
+      render();
+    });
+  });
+
+  const note = document.getElementById("gepNote");
+  const offen = geplantOffen(heute, "9999-12-31");
+  note.textContent = offen.length
+    ? "Noch offen: " + fmt(geplantSumme(offen)) + ". Diese Beträge zieht die App von deinem verfügbaren Geld ab und berücksichtigt sie in der Vorschau."
+    : "";
+  note.style.display = offen.length ? "" : "none";
+}
+
+function addGeplant() {
+  const name = document.getElementById("newGepName").value.trim();
+  const datum = document.getElementById("newGepDatum").value;
+  const betrag = parseFloat(document.getElementById("newGepBetrag").value) || 0;
+  if (!name && !betrag) return;
+  data.geplant.push({ id: uid(), name: name || "Geplante Ausgabe", amount: betrag, date: datum || "", erledigt: false });
+  document.getElementById("newGepName").value = "";
+  document.getElementById("newGepBetrag").value = "";
+  render();
+  document.getElementById("newGepName").focus();
+}
+document.getElementById("addGepBtn").addEventListener("click", addGeplant);
+document.getElementById("newGepName").addEventListener("keydown", e => { if (e.key === "Enter") addGeplant(); });
+document.getElementById("newGepBetrag").addEventListener("keydown", e => { if (e.key === "Enter") addGeplant(); });
+
+// --- Reiter "Heute": zwei Zahlen, ein Satz, ein Rueckhaltebetrag ---
+function schnittProTag() {
+  const ks = recordedKeys().filter(k => k !== data.currentMonth).slice(-6);
+  if (!ks.length) return null;
+  let summe = 0, tage = 0;
+  ks.forEach(k => { summe += variableTotal(data.months[k]); tage += daysInMonth(k); });
+  return tage ? summe / tage : null;
+}
+
+// Reine Rechnung, damit sie pruefbar bleibt
+function heuteZahlen() {
   const m = cur(), key = data.currentMonth, heute = todayISO();
-  const rest = buffer(m), tage = daysInMonth(key), heutigerMonat = heute.slice(0, 7);
+  const tage = daysInMonth(key), monatsEnde = key + "-" + String(tage).padStart(2, "0");
+  const laufend = key === heute.slice(0, 7), kuenftig = key > heute.slice(0, 7);
+  const tagNr = laufend ? Number(heute.slice(8, 10)) : tage;
+  const verbleibend = laufend ? tage - tagNr + 1 : (kuenftig ? tage : 0);
+  const ab = laufend ? heute : (kuenftig ? key + "-01" : monatsEnde);
 
-  let verbleibend;
-  if (key === heutigerMonat) verbleibend = tage - Number(heute.slice(8, 10)) + 1;   // heute zählt mit
-  else if (key > heutigerMonat) verbleibend = tage;
-  else verbleibend = 0;
+  const offenGeplant = geplantOffen(ab, monatsEnde);
+  const geplantBetrag = geplantSumme(offenGeplant);
+  const offenFix = fixZahlungen(key).filter(z => !laufend || z.tag >= tagNr);
+  const fixBetrag = offenFix.reduce((s, z) => s + z.betrag, 0);
 
-  let satz, art = "";
+  const frei = buffer(m) - geplantBetrag;
+  const proTag = verbleibend > 0 ? frei / verbleibend : 0;
+  const bisher = variableTotal(m);
+  const tempo = laufend ? bisher / Math.max(1, tagNr) : bisher / tage;
+  const hochgerechnet = tempo * tage;
+  const verfuegbarGesamt = (Number(m.income) || 0) - fixedTotal(m) - geplantBetrag;
+
+  return { frei, proTag, verbleibend, tage, tagNr, laufend, kuenftig,
+           geplantBetrag, offenGeplant, fixBetrag, offenFix,
+           tempo, hochgerechnet, verfuegbarGesamt, bisher };
+}
+
+function heuteSatz(z) {
+  const m = cur();
   if (!(Number(m.income) || 0) && !m.fixed.length && !m.variable.length) {
-    satz = "Trag im Reiter <b>Fix</b> dein Einkommen und deine Fixkosten ein – dann steht hier, was dir je Tag bleibt.";
-  } else if (rest < 0) {
-    art = "leer";
-    satz = verbleibend > 0
-      ? "Für die restlichen <b>" + verbleibend + (verbleibend === 1 ? " Tag</b>" : " Tage</b>") + " ist nichts mehr da – du liegst <b>" + fmt(-rest) + "</b> über den Einnahmen."
-      : "Der Monat schließt mit <b>" + fmt(-rest) + "</b> über den Einnahmen.";
-  } else if (rest === 0) {
-    art = "knapp";
-    satz = "Dein Geld ist für diesen Monat vollständig verplant – es bleibt nichts übrig.";
-  } else if (verbleibend === 0) {
-    satz = "Der Monat ist abgeschlossen – übrig geblieben sind <b>" + fmt(rest) + "</b>.";
-  } else {
-    const proTag = rest / verbleibend;
-    if (proTag < 5) art = "knapp";
-    satz = "Noch <b>" + verbleibend + (verbleibend === 1 ? " Tag</b>" : " Tage</b>") +
-           " – dir bleiben <b>" + fmt(rest) + "</b>, das sind <b>" + fmt(proTag) + " pro Tag</b>.";
-    if (m.budgetEnabled && Number(m.dailyBudget) > 0) {
-      const b = Number(m.dailyBudget);
-      satz += proTag >= b
-        ? " Dein Tagesbudget von " + fmt(b) + " ist damit gedeckt."
-        : " Dein Tagesbudget von " + fmt(b) + " liegt darüber.";
-    }
+    return { text: "Trag im Reiter <b>Monat</b> dein Einkommen und deine Fixkosten ein – dann steht hier, was dir bleibt.", art: "neutral" };
   }
-  el.innerHTML = satz;
-  el.className = "restsatz " + art;
+  if (z.frei < 0) {
+    return { text: "Du liegst <b>" + fmt(-z.frei) + "</b> über deinen Einnahmen. Jede weitere Ausgabe vergrößert das Loch.", art: "neg" };
+  }
+  if (!z.verbleibend) {
+    return { text: "Der Monat ist abgeschlossen – übrig geblieben sind <b>" + fmt(z.frei) + "</b>.", art: "neutral" };
+  }
+  if (z.hochgerechnet > z.verfuegbarGesamt && z.verfuegbarGesamt > 0 && z.bisher > 0) {
+    const fehlt = z.hochgerechnet - z.verfuegbarGesamt;
+    const wenigerProTag = fehlt / z.tage;
+    return { text: "Sei vorsichtig: Bei diesem Tempo fehlen zum Monatsende <b>" + fmt(fehlt) +
+                   "</b>. Rund <b>" + fmt(wenigerProTag) + " pro Tag</b> weniger würden reichen.", art: "warn" };
+  }
+  const schnitt = schnittProTag();
+  if (schnitt && z.bisher > 0 && z.tempo < schnitt * 0.85) {
+    const prozent = Math.round((1 - z.tempo / schnitt) * 100);
+    const uebrig = z.verfuegbarGesamt - z.hochgerechnet;
+    return { text: "Weiter so: Du liegst <b>" + prozent + " % unter deinem Schnitt</b>." +
+                   (uebrig > 0 ? " Bleibt es dabei, sind zum Monatsende rund <b>" + fmt(uebrig) + "</b> übrig." : ""), art: "gut" };
+  }
+  return { text: "Du liegst im Plan – <b>" + fmt(z.proTag) + " pro Tag</b> bis zum " + z.tage + ".", art: "neutral" };
+}
+
+function renderHeute() {
+  const el = document.getElementById("heuteSatz");
+  if (!el) return;
+  const z = heuteZahlen(), s = heuteSatz(z);
+  document.getElementById("heuteTag").textContent = z.verbleibend > 0 ? fmt(Math.max(0, z.proTag)) : "–";
+  document.getElementById("heuteMonat").textContent = fmt(z.frei);
+  el.innerHTML = s.text;
+  document.getElementById("heuteKarte").className = "heutekarte " + s.art;
+
+  const rueck = document.getElementById("heuteRueck");
+  const teile = [];
+  if (z.offenFix.length) {
+    const namen = z.offenFix.slice(0, 3).map(x => x.name).join(", ");
+    teile.push("Noch <b>" + fmt(z.fixBetrag) + "</b> Fixkosten diesen Monat (" + escapeHtml(namen) +
+               (z.offenFix.length > 3 ? " u. a." : "") + ") – oben schon eingerechnet, aber halte sie bereit.");
+  }
+  if (z.offenGeplant.length) {
+    teile.push("Zurückhalten für Geplantes: <b>" + fmt(z.geplantBetrag) + "</b> (" +
+               escapeHtml(z.offenGeplant.slice(0, 3).map(g => g.name).join(", ")) + ").");
+  }
+  rueck.innerHTML = teile.join(" ");
+  rueck.style.display = teile.length ? "" : "none";
+
+  const liste = document.getElementById("zuletztListe");
+  const letzte = [...cur().variable].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 3);
+  document.getElementById("secZuletzt").style.display = letzte.length ? "" : "none";
+  liste.innerHTML = letzte.map(e =>
+    '<div class="zuletzt-row"><span class="zuletzt-datum num">' + fmtDate(e.date) + '</span>' +
+    '<span class="zuletzt-text">' + escapeHtml(e.description || e.category || "Sonstiges") + '</span>' +
+    '<span class="num" style="font-weight:600">' + fmt(e.amount) + zeitZusatz(e.amount) + '</span></div>').join("");
 }
 
 // --- Schnell erfassen: eine Zeile, ein Satz ---
@@ -2147,10 +2326,18 @@ function schnellBuchen() {
   const feld = document.getElementById("schnellInput");
   const g = parseSchnell(feld.value);
   if (!g) { zeigeSchnellVorschau(); feld.focus(); return; }
-  cur().variable.push({ id: uid(), date: todayISO(), amount: g.betrag, description: g.zweck, category: g.kategorie });
+  const datum = schnellDatum || todayISO();
+  const eintrag = { id: uid(), date: datum, amount: g.betrag, description: g.zweck, category: g.kategorie };
+  if (pendingReceipt && pendingReceipt.thumb) eintrag.receipt = pendingReceipt.thumb;   // Beleg vom Scan
+  ensureMonth(datum.slice(0, 7));
+  data.months[datum.slice(0, 7)].variable.push(eintrag);
   data.lastCategory = g.kategorie;
   if (g.zweck) merkeHaendler(g.zweck, g.kategorie);
+  if (eintrag.receipt && !save()) { delete eintrag.receipt; save(); }                   // Beleg zu gross
   feld.value = "";
+  schnellDatum = null;
+  pendingReceipt = null;
+  hideReceiptPreview();
   render();
   const el = document.getElementById("schnellVorschau");
   el.textContent = fmt(g.betrag) + " gebucht" + (g.zweck ? " – " + g.zweck : "") + ".";
@@ -2158,7 +2345,7 @@ function schnellBuchen() {
   feld.focus();
 }
 
-document.getElementById("schnellInput").addEventListener("input", zeigeSchnellVorschau);
+document.getElementById("schnellInput").addEventListener("input", () => { zeigeSchnellVorschau(); zeigeZeitHinweis(); });
 document.getElementById("schnellInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); schnellBuchen(); } });
 document.getElementById("schnellBtn").addEventListener("click", schnellBuchen);
 
@@ -2206,7 +2393,8 @@ function renderZeit() {
 function zeigeZeitHinweis() {
   const el = document.getElementById("zeitHinweis");
   if (!el) return;
-  const betrag = parseFloat(document.getElementById("expAmount").value);
+  const g = parseSchnell(document.getElementById("schnellInput").value);
+  const betrag = g ? g.betrag : parseFloat(document.getElementById("expAmount").value);
   const t = data.zeitAn && betrag > 0 ? zeitText(betrag) : "";
   el.textContent = t ? "Das sind rund " + t + " Arbeitszeit." : "";
 }
@@ -2496,7 +2684,7 @@ function importBackup(file) {
     if (!parsed || typeof parsed !== "object" || !parsed.months || typeof parsed.months !== "object") { setBackupStatus("Ungültige Backup-Datei.", true); return; }
     if (!confirm("Aktuelle Daten werden durch das Backup ersetzt. Fortfahren?")) return;
     data = normalisiereMonate(parsed);
-    if (!data.activeTab) data.activeTab = "tag";
+    if (!data.activeTab) data.activeTab = "heute";
     if (!data.lastCategory) data.lastCategory = CATEGORIES[0].name;
     const ks = Object.keys(data.months).sort();
     if (!data.currentMonth || !data.months[data.currentMonth]) data.currentMonth = ks.length ? ks[ks.length - 1] : monthKey(new Date());
