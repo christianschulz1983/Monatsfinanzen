@@ -393,7 +393,7 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .ycat{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .ycat-name{width:110px;flex-shrink:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ycat-track{flex:1;height:10px;border-radius:999px;background:var(--slate100);overflow:hidden}
-.ycat-fill{height:100%;border-radius:999px}
+.ycat-fill{display:block;height:100%;border-radius:999px}   /* inline haette keine Breite */
 .ycat-amt{width:80px;text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 
 .note{text-align:center;font-size:12px;color:var(--slate400)}
@@ -2314,6 +2314,49 @@ function kinderZahlen(key) {
            kategorien, schnitt, monate: vormonate.length, imJahr, jahr, anzahl: monat.length };
 }
 
+// Monat fuer Monat und das ganze Jahr
+function kinderVerlauf(bisKey, anzahl) {
+  const alle = Object.keys(data.months).filter(k => k <= bisKey).sort().map(k => ({
+    key: k,
+    betrag: data.months[k].variable.filter(e => e.kind).reduce((s, e) => s + (Number(e.amount) || 0), 0),
+  }));
+  const start = alle.findIndex(x => x.betrag > 0);
+  if (start < 0) return [];
+  // Ab dem ersten Monat mit Kinderkosten - Luecken darin bleiben als Null stehen,
+  // sonst verschwaende ein Monat ohne Ausgaben unbemerkt aus dem Verlauf.
+  return alle.slice(start).slice(-anzahl);
+}
+
+function kinderJahr(jahr) {
+  const keys = Object.keys(data.months).filter(k => k.slice(0, 4) === jahr).sort();
+  const nachKategorie = {};
+  let gesamt = 0, km = 0, monateMitWert = 0;
+  keys.forEach(k => {
+    let monatsSumme = 0;
+    data.months[k].variable.filter(e => e.kind).forEach(e => {
+      const betrag = Number(e.amount) || 0;
+      const c = e.category || "Sonstiges";
+      nachKategorie[c] = (nachKategorie[c] || 0) + betrag;
+      gesamt += betrag; monatsSumme += betrag;
+      km += Number(e.km) || 0;
+    });
+    if (monatsSumme > 0) monateMitWert++;
+  });
+  const kategorien = Object.keys(nachKategorie)
+    .map(name => ({ name, betrag: nachKategorie[name], farbe: categoryColor(name) }))
+    .sort((a, b) => b.betrag - a.betrag);
+  return { jahr, gesamt, kategorien, km, monate: monateMitWert,
+           schnitt: monateMitWert ? gesamt / monateMitWert : 0 };
+}
+
+function balkenListe(zeilen, hoechst) {
+  return zeilen.map(z =>
+    '<div class="ycat"><span class="ycat-name">' + escapeHtml(z.name) + '</span>' +
+    '<span class="ycat-track"><span class="ycat-fill" style="width:' +
+      Math.round(hoechst > 0 ? (z.betrag / hoechst) * 100 : 0) + '%;background:' + (z.farbe || "#db2777") + '"></span></span>' +
+    '<span class="ycat-amt num">' + fmt(z.betrag) + "</span></div>").join("");
+}
+
 function renderKinderAuswertung() {
   const box = document.getElementById("kinderAuswertung");
   if (!box) return;
@@ -2364,7 +2407,43 @@ function renderKinderAuswertung() {
     zeilen + gem +
     (kats ? '<p class="fixnote" style="background:none;padding:12px 0 4px;margin:0">Wofür:</p>' + kats : "") +
     kmZeile +
-    '<p class="fchint">' + vergleich + " Im Jahr " + z.jahr + " bisher <b>" + fmt(z.imJahr) + "</b>.</p>";
+    '<p class="fchint">' + vergleich + "</p>" +
+    verlaufBlock() + jahrBlock(z.jahr);
+}
+
+// Monat fuer Monat: zeigt, ob die Kosten steigen
+function verlaufBlock() {
+  const v = kinderVerlauf(data.currentMonth, 12);
+  if (v.length < 2) return "";
+  const hoechst = Math.max(...v.map(x => x.betrag));
+  const zeilen = v.map(x => ({ name: monthShort(x.key), betrag: x.betrag }));
+  const ersteHaelfte = v.slice(0, Math.floor(v.length / 2));
+  const zweiteHaelfte = v.slice(Math.ceil(v.length / 2));
+  const mittel = a => a.reduce((s, x) => s + x.betrag, 0) / (a.length || 1);
+  const alt = mittel(ersteHaelfte), neu = mittel(zweiteHaelfte);
+  let trend = "";
+  if (alt > 0) {
+    const proz = Math.round((neu / alt - 1) * 100);
+    if (Math.abs(proz) >= 10) {
+      trend = "Über die erfassten Monate " + (proz > 0 ? "steigend" : "fallend") +
+              ": zuletzt " + Math.abs(proz) + " % " + (proz > 0 ? "mehr" : "weniger") + " als am Anfang.";
+    } else trend = "Über die erfassten Monate weitgehend gleichbleibend.";
+  }
+  return '<p class="ffhead" style="background:none;padding:16px 0 8px">Monat für Monat</p>' +
+         balkenListe(zeilen, hoechst) +
+         (trend ? '<p class="fchint">' + trend + "</p>" : "");
+}
+
+// Das ganze Jahr, aufgeteilt nach Posten
+function jahrBlock(jahr) {
+  const j = kinderJahr(jahr);
+  if (!j.gesamt) return "";
+  const hoechst = j.kategorien.length ? j.kategorien[0].betrag : 0;
+  return '<p class="ffhead" style="background:none;padding:16px 0 8px">Im Jahr ' + jahr + ' nach Posten</p>' +
+         balkenListe(j.kategorien, hoechst) +
+         '<p class="fchint">Zusammen <b>' + fmt(j.gesamt) + "</b> in " + j.monate +
+         (j.monate === 1 ? " Monat" : " Monaten") + " · im Schnitt <b>" + fmt(j.schnitt) + "</b> je Monat" +
+         (j.km > 0 ? " · " + j.km.toLocaleString("de-DE") + " km für die Kinder" : "") + ".</p>";
 }
 
 // --- Kilometer: Anteil der Fahrten fuer die Kinder und was sie kosten ---

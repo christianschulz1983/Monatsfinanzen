@@ -30,7 +30,8 @@ Kein Server, kein Konto, keine Installation.
   von Hand gewählte Kategorie wird nicht überschrieben
 - Kinder als zweite Ebene quer zu den Kategorien: Vornamen anlegen, beim Buchen ein Kästchen
   (oder den Vornamen in der Schnellzeile), eigene Auswertung mit Anteil, Aufteilung je Kind,
-  Kategorien dahinter, Monatsschnitt und Jahressumme
+  Kategorien dahinter, Verlauf über bis zu zwölf Monate mit Trendsatz und Jahresübersicht
+  nach Posten mit Schnitt je Monat
 - Kilometer je Ausgabe (optional, auch als „340km" in der Schnellzeile): Anteil der Fahrten
   für die Kinder, Kosten je Kilometer und der daraus abgeleitete Kostenanteil
 - „Zuletzt gebucht" mit Löschknopf je Zeile
