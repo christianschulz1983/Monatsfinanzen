@@ -333,6 +333,10 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 .schnellzeile{display:flex;gap:8px;align-items:center}
 .schnellzeile .grow{flex:1;min-width:0}
 .schnellbtn{grid-column:auto;flex:none;padding:10px 18px}
+.schnellzuordnung{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.schnellzuordnung .fdlab{flex:1 1 140px}
+.zuletzt-del{flex:none;background:none;border:none;color:#cbd5e1;width:28px;height:28px;display:grid;place-items:center;border-radius:6px;transition:color .15s}
+.zuletzt-del:hover{color:var(--red)}
 .schnellvor{font-size:13px;color:var(--slate500);margin:8px 0 0;min-height:18px}
 .schnellvor.gut{color:var(--em700);font-weight:500}
 .zeit{font-size:11px;color:var(--slate400);white-space:nowrap}
@@ -431,6 +435,10 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           <input id="schnellInput" class="inp inp--v grow" type="text" inputmode="text"
                  placeholder="12,50 Rewe Lebensmittel" autocomplete="off">
           <button id="schnellBtn" class="expbtn schnellbtn" type="button">Buchen</button>
+        </div>
+        <div class="schnellzuordnung">
+          <label class="fdlab">Datum<input id="schnellDate" class="inp fdinput" type="date"></label>
+          <label class="fdlab">Kategorie<select id="schnellKat" class="inp fdinput"></select></label>
         </div>
         <p id="schnellVorschau" class="schnellvor"></p>
       </div>
@@ -751,7 +759,7 @@ function categoryColor(name) { return CATEGORY_COLOR[name] || "#64748b"; }
 
 const PDFJS_WORKER = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 let pendingReceipt = null;
-let schnellDatum = null;          // vom Beleg erkanntes Datum fuer die Schnellzeile
+let katManuell = false;           // Kategorie von Hand gesetzt? Dann nicht ueberschreiben
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
@@ -1311,7 +1319,7 @@ document.getElementById("expDesc").addEventListener("keydown", e => { if (e.key 
 document.getElementById("expAmount").addEventListener("keydown", e => { if (e.key === "Enter") addExpense(); });
 document.getElementById("scanBtn").addEventListener("click", () => document.getElementById("scanFile").click());
 document.getElementById("scanFile").addEventListener("change", e => { const f = e.target.files[0]; if (f) handleReceiptFile(f); e.target.value = ""; });
-document.getElementById("scanRemove").addEventListener("click", () => { pendingReceipt = null; schnellDatum = null; hideReceiptPreview(); versteckeBelegPosten(); setScanStatus(""); });
+document.getElementById("scanRemove").addEventListener("click", () => { pendingReceipt = null; resetSchnell(); hideReceiptPreview(); versteckeBelegPosten(); setScanStatus(""); });
 document.getElementById("lightbox").addEventListener("click", () => document.getElementById("lightbox").classList.add("hidden"));
 document.getElementById("editSave").addEventListener("click", saveEdit);
 document.getElementById("editCancel").addEventListener("click", closeEdit);
@@ -1488,7 +1496,7 @@ async function handleReceiptFile(file) {
       zeigeSchnellVorschau();
       msg += " Betrag: " + fmt(parsed.amount) + ".";
     }
-    if (parsed.date) { schnellDatum = parsed.date; msg += " Datum erkannt."; }
+    if (parsed.date) { document.getElementById("schnellDate").value = parsed.date; zeigeSchnellVorschau(); msg += " Datum erkannt."; }
     if (parsed.amount == null && !parsed.date) msg += " Betrag/Datum nicht automatisch erkannt.";
     const posten = parseReceiptItems(result && result.data && result.data.text);
     zeigeBelegPosten(posten);
@@ -2268,7 +2276,14 @@ function renderHeute() {
   liste.innerHTML = letzte.map(e =>
     '<div class="zuletzt-row"><span class="zuletzt-datum num">' + fmtDate(e.date) + '</span>' +
     '<span class="zuletzt-text">' + escapeHtml(e.description || e.category || "Sonstiges") + '</span>' +
-    '<span class="num" style="font-weight:600">' + fmt(e.amount) + zeitZusatz(e.amount) + '</span></div>').join("");
+    '<span class="num" style="font-weight:600">' + fmt(e.amount) + zeitZusatz(e.amount) + '</span>' +
+    '<button class="zuletzt-del" data-zdel="' + e.id + '" aria-label="Buchung löschen">✕</button></div>').join("");
+  liste.querySelectorAll("[data-zdel]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      cur().variable = cur().variable.filter(x => x.id !== btn.dataset.zdel);
+      render();
+    });
+  });
 }
 
 // --- Schnell erfassen: eine Zeile, ein Satz ---
@@ -2304,21 +2319,37 @@ function parseSchnell(text) {
   const zweck = rest.filter((_, i) => i !== iKat)
     .filter(w => !/^(€|eur|euro)$/i.test(w))          // reine Waehrungsangaben gehoeren nicht in den Zweck
     .join(" ").trim();
-  if (!kategorie) kategorie = kategorieFuerNamen(zweck) || data.lastCategory || CATEGORIES[0].name;
-  return { betrag, kategorie, zweck };
+  let kategorieErkannt = !!kategorie;                 // stand die Kategorie im Text?
+  if (!kategorie) {
+    const geraten = kategorieFuerNamen(zweck);        // sonst aus dem Haendlernamen
+    if (geraten) { kategorie = geraten; kategorieErkannt = true; }
+    else kategorie = data.lastCategory || CATEGORIES[0].name;
+  }
+  return { betrag, kategorie, zweck, kategorieErkannt };
+}
+
+function resetSchnell() {
+  const d = document.getElementById("schnellDate");
+  if (d) d.value = todayISO();
+  const k = document.getElementById("schnellKat");
+  if (k) k.value = data.lastCategory || CATEGORIES[0].name;
+  katManuell = false;
 }
 
 function zeigeSchnellVorschau() {
   const el = document.getElementById("schnellVorschau");
-  const g = parseSchnell(document.getElementById("schnellInput").value);
+  const feld = document.getElementById("schnellInput");
+  const kat = document.getElementById("schnellKat");
+  const g = parseSchnell(feld.value);
+  if (g && !katManuell && g.kategorieErkannt) kat.value = g.kategorie;   // nur wenn wirklich erkannt
   if (!g) {
-    el.textContent = document.getElementById("schnellInput").value.trim()
-      ? "Noch kein Betrag erkannt – etwa „12,50 Rewe Lebensmittel“."
-      : "";
+    el.textContent = feld.value.trim() ? "Noch kein Betrag erkannt – etwa „12,50 Rewe Lebensmittel“." : "";
     el.className = "schnellvor";
     return;
   }
-  el.textContent = "Bucht: " + fmt(g.betrag) + " · " + g.kategorie + (g.zweck ? " · " + g.zweck : "");
+  const datum = document.getElementById("schnellDate").value || todayISO();
+  const wann = datum === todayISO() ? "heute" : fmtDate(datum);
+  el.textContent = "Bucht: " + fmt(g.betrag) + " · " + kat.value + (g.zweck ? " · " + g.zweck : "") + " · " + wann;
   el.className = "schnellvor gut";
 }
 
@@ -2326,21 +2357,23 @@ function schnellBuchen() {
   const feld = document.getElementById("schnellInput");
   const g = parseSchnell(feld.value);
   if (!g) { zeigeSchnellVorschau(); feld.focus(); return; }
-  const datum = schnellDatum || todayISO();
-  const eintrag = { id: uid(), date: datum, amount: g.betrag, description: g.zweck, category: g.kategorie };
+  const datum = document.getElementById("schnellDate").value || todayISO();
+  const kategorie = document.getElementById("schnellKat").value || g.kategorie;
+  const eintrag = { id: uid(), date: datum, amount: g.betrag, description: g.zweck, category: kategorie };
   if (pendingReceipt && pendingReceipt.thumb) eintrag.receipt = pendingReceipt.thumb;   // Beleg vom Scan
   ensureMonth(datum.slice(0, 7));
   data.months[datum.slice(0, 7)].variable.push(eintrag);
-  data.lastCategory = g.kategorie;
-  if (g.zweck) merkeHaendler(g.zweck, g.kategorie);
+  data.lastCategory = kategorie;
+  if (g.zweck) merkeHaendler(g.zweck, kategorie);
   if (eintrag.receipt && !save()) { delete eintrag.receipt; save(); }                   // Beleg zu gross
   feld.value = "";
-  schnellDatum = null;
   pendingReceipt = null;
   hideReceiptPreview();
+  resetSchnell();
   render();
   const el = document.getElementById("schnellVorschau");
-  el.textContent = fmt(g.betrag) + " gebucht" + (g.zweck ? " – " + g.zweck : "") + ".";
+  el.textContent = fmt(g.betrag) + " gebucht" + (g.zweck ? " – " + g.zweck : "") +
+                   (datum === todayISO() ? "." : " für den " + fmtDate(datum) + ".");
   el.className = "schnellvor gut";
   feld.focus();
 }
@@ -2348,6 +2381,8 @@ function schnellBuchen() {
 document.getElementById("schnellInput").addEventListener("input", () => { zeigeSchnellVorschau(); zeigeZeitHinweis(); });
 document.getElementById("schnellInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); schnellBuchen(); } });
 document.getElementById("schnellBtn").addEventListener("click", schnellBuchen);
+document.getElementById("schnellKat").addEventListener("change", () => { katManuell = true; zeigeSchnellVorschau(); });
+document.getElementById("schnellDate").addEventListener("change", zeigeSchnellVorschau);
 
 // --- Preise in Arbeitszeit ---
 const WOCHEN_JE_MONAT = 13 / 3;                    // 52 Wochen auf 12 Monate
@@ -2778,6 +2813,8 @@ function resetExpenseForm() {
 const catOptions = CATEGORIES.map(c => '<option value="' + c.name + '">' + c.name + '</option>').join("");
 document.getElementById("expCat").innerHTML = catOptions;
 document.getElementById("editCat").innerHTML = catOptions;
+document.getElementById("schnellKat").innerHTML = catOptions;
+resetSchnell();
 render();
 resetExpenseForm();
 </script>

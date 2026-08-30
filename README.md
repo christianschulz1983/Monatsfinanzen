@@ -24,7 +24,9 @@ Kein Server, kein Konto, keine Installation.
 - Geplante Einmalausgaben (TÜV, Urlaub, Reparatur) mit Datum; mindern das verfügbare Geld
   und erscheinen in der Vorschau
 - Schnell-Erfassung: Betrag, Zweck und Kategorie in einer Zeile („12,50 Rewe Lebensmittel"),
-  Diktat über die Tastatur möglich
+  Diktat über die Tastatur möglich; Datum und Kategorie daneben zum Nachbessern, eine
+  von Hand gewählte Kategorie wird nicht überschrieben
+- „Zuletzt gebucht" mit Löschknopf je Zeile
 - Kontoauszug als Ausgaben-Import: Kartenzahlungen und Lastschriften mit Datum, Betrag und
   geratener Kategorie; bereits erfasste Buchungen und Fixposten werden gekennzeichnet
 - Händler-Gedächtnis: eine korrigierte Kategorie gilt beim nächsten Mal automatisch
