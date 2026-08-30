@@ -103,6 +103,18 @@ input[type=number]{-moz-appearance:textfield}
 .dot{width:10px;height:10px;border-radius:999px}
 .dot--fixed{background:var(--fixed500)} .dot--vary{background:var(--vary500)} .dot--stat{background:var(--slate400)}
 .dot--fc{background:#0ea5e9}
+.dot--kind{background:#ec4899}
+.kindfeld.hidden{display:none}
+.addrow--kind{background:rgba(253,242,248,.7);border-top-color:#fbcfe8}
+.addbtn--kind{background:#db2777}
+.addbtn--kind:hover{background:#be185d}
+.fixnote--kind{background:rgba(253,242,248,.7)}
+.kindmarke{flex:none;font-size:11px;font-weight:600;border-radius:999px;padding:2px 8px;white-space:nowrap;background:#fce7f3;color:#be185d}
+.kzeile{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--slate100);font-size:14px;flex-wrap:wrap}
+.kzeile:last-of-type{border-bottom:none}
+.kname{flex:1 1 120px;min-width:0;font-weight:600}
+.kwert{flex:none;font-weight:600}
+.kmeta{flex:none;font-size:13px;color:var(--slate500)}
 .fcline{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px}
 .fclab{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--slate500);flex:1 1 130px}
 .fcres{margin-top:6px}
@@ -441,6 +453,7 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
         <div class="schnellzuordnung">
           <label class="fdlab">Datum<input id="schnellDate" class="inp fdinput" type="date"></label>
           <label class="fdlab">Kategorie<select id="schnellKat" class="inp fdinput"></select></label>
+          <label class="fdlab kindfeld" id="schnellKindFeld">Für<select id="schnellKind" class="inp fdinput"></select></label>
         </div>
         <p id="schnellVorschau" class="schnellvor"></p>
       </div>
@@ -542,6 +555,18 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
     </section>
 
     <section class="section">
+      <div class="section-head"><span class="dot dot--kind"></span><h2 class="section-title">Kinder</h2></div>
+      <div class="panel">
+        <div id="kinderListe"></div>
+        <div class="addrow addrow--kind">
+          <input id="newKindName" class="inp grow" type="text" placeholder="Vorname">
+          <button id="addKindBtn" class="addbtn addbtn--kind" aria-label="Kind hinzufügen">+</button>
+        </div>
+        <p class="fixnote fixnote--kind" id="kindNote">Wer hier steht, lässt sich jeder Ausgabe zuordnen – quer zu den Kategorien. Tanken für die Fahrten, Kleidung, Eis: alles zählt zusammen, bleibt aber in seiner Kategorie.</p>
+      </div>
+    </section>
+
+    <section class="section">
       <div class="section-head"><span class="dot dot--fc"></span><h2 class="section-title">Geplante Ausgaben</h2></div>
       <div class="panel">
         <div id="geplantListe"></div>
@@ -563,6 +588,7 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
           <div class="field f-amount"><label for="expAmount">Betrag (€)</label><input id="expAmount" class="inp inp--v num" type="number" step="0.01" inputmode="decimal" placeholder="0,00"></div>
           <div class="field f-cat"><label for="expCat">Kategorie</label><select id="expCat" class="inp inp--v"></select></div>
           <div class="field f-desc"><label for="expDesc">Verwendungszweck</label><input id="expDesc" class="inp inp--v" type="text" placeholder="optional, z. B. Rewe, Aral"></div>
+          <div class="field f-kind kindfeld" id="expKindFeld"><label for="expKind">Für</label><select id="expKind" class="inp inp--v"></select></div>
           <button id="addExpBtn" class="expbtn">Ausgabe buchen</button>
         </div>
       </div>
@@ -640,6 +666,11 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
     <section class="section" id="secAuff">
       <div class="section-head"><span class="dot dot--vary"></span><h2 class="section-title">Auffällig</h2></div>
       <div class="panel panel-pad"><div id="auffList"></div></div>
+    </section>
+
+    <section class="section" id="secKinder">
+      <div class="section-head"><span class="dot dot--kind"></span><h2 class="section-title">Kinder</h2></div>
+      <div class="panel panel-pad"><div id="kinderAuswertung"></div></div>
     </section>
 
     <section class="section" id="secRuecklage">
@@ -726,6 +757,7 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
   <div class="modal-card">
     <h3 class="modal-title">Ausgabe bearbeiten</h3>
     <div class="modal-field"><label for="editDate">Datum</label><input id="editDate" class="inp" type="date"></div>
+    <div class="modal-field kindfeld" id="editKindFeld"><label for="editKind">Für</label><select id="editKind" class="inp"></select></div>
     <div class="modal-field"><label for="editAmount">Betrag (€)</label><input id="editAmount" class="inp num" type="number" step="0.01" inputmode="decimal"></div>
     <div class="modal-field"><label for="editCat">Kategorie</label><select id="editCat" class="inp"></select></div>
     <div class="modal-field"><label for="editDesc">Verwendungszweck</label><input id="editDesc" class="inp" type="text"></div>
@@ -864,6 +896,8 @@ function normalisiereStamm(d) {
   }
   if (!d.sturz || typeof d.sturz.differenz !== "number") d.sturz = null;
   if (!d.haendler || typeof d.haendler !== "object") d.haendler = {};
+  if (!Array.isArray(d.kinder)) d.kinder = [];
+  d.kinder = d.kinder.filter(k => k && k.name).map(k => ({ id: k.id || uid(), name: String(k.name) }));
   if (!Array.isArray(d.geplant)) d.geplant = [];
   d.geplant = d.geplant.filter(g => g && g.name).map(g => ({
     id: g.id || uid(), name: String(g.name), amount: Number(g.amount) || 0,
@@ -926,6 +960,7 @@ function render() {
   renderSturz();
   renderZeit();
   renderHeute();
+  renderKinder();
   renderGeplant();
   renderStats();
   renderEval();
@@ -1117,6 +1152,7 @@ function renderVariable() {
         '<span class="cat-dot" style="background:' + categoryColor(cat) + '"></span>' +
         '<span class="edesc-text">' + escapeHtml(e.description || cat) + '</span>' +
         '<span class="ecat-tag">' + escapeHtml(cat) + '</span>' +
+        (e.kind && kindName(e.kind) ? '<span class="kindmarke">' + escapeHtml(kindName(e.kind)) + '</span>' : '') +
       '</div>' +
       (e.receipt ? '<img class="ereceipt" src="' + e.receipt + '" alt="Beleg">' : '') +
       '<div class="eamt num">' + fmt(e.amount) + zeitZusatz(e.amount) + '</div>' +
@@ -1147,7 +1183,7 @@ function renderBudget(vari) {
 }
 
 // --- Auswertung ---
-function renderEval() { renderAvailable(); renderCategory(); renderAuffaellig(); renderRuecklagen(); renderAverages(); renderEvalTable(); renderYear(); }
+function renderEval() { renderAvailable(); renderCategory(); renderAuffaellig(); renderKinderAuswertung(); renderRuecklagen(); renderAverages(); renderEvalTable(); renderYear(); }
 
 function renderAvailable() {
   const m = cur();
@@ -1334,7 +1370,8 @@ function addExpense() {
   const description = document.getElementById("expDesc").value.trim();
   const category = document.getElementById("expCat").value || "Sonstiges";
   if (amount <= 0) { document.getElementById("expAmount").focus(); return; }
-  const exp = { id: uid(), date, amount, description, category };
+  const kind = document.getElementById("expKind").value || "";
+  const exp = { id: uid(), date, amount, description, category, kind };
   if (pendingReceipt && pendingReceipt.thumb) exp.receipt = pendingReceipt.thumb;
   cur().variable.push(exp);
   data.lastCategory = category;
@@ -1365,6 +1402,8 @@ function openEdit(id) {
   document.getElementById("editAmount").value = e.amount;
   document.getElementById("editCat").value = e.category || "Sonstiges";
   document.getElementById("editDesc").value = e.description || "";
+  renderKindFelder();
+  document.getElementById("editKind").value = e.kind || "";
   document.getElementById("editModal").classList.remove("hidden");
 }
 function closeEdit() { editingId = null; document.getElementById("editModal").classList.add("hidden"); }
@@ -1376,6 +1415,7 @@ function saveEdit() {
   e.amount = amount;
   e.category = document.getElementById("editCat").value || "Sonstiges";
   e.description = document.getElementById("editDesc").value.trim();
+  e.kind = document.getElementById("editKind").value || "";
   closeEdit();
   render();
 }
@@ -2133,6 +2173,172 @@ document.getElementById("azAlle").addEventListener("click", () => {
 });
 document.getElementById("azWeg").addEventListener("click", () => { versteckeAuszug(); setScanStatus(""); });
 
+// --- Kinder: zweite Ebene quer zu den Kategorien ---
+const KIND_ALLE = "alle";
+
+function kindName(wert) {
+  if (wert === KIND_ALLE) return data.kinder.length > 1 ? "alle Kinder" : "Kinder";
+  const k = (data.kinder || []).find(x => x.id === wert);
+  return k ? k.name : "";
+}
+function kindOptionen() {
+  const teile = ['<option value="">—</option>'];
+  (data.kinder || []).forEach(k => teile.push('<option value="' + k.id + '">' + escapeHtml(k.name) + "</option>"));
+  if ((data.kinder || []).length > 1) teile.push('<option value="' + KIND_ALLE + '">alle Kinder</option>');
+  return teile.join("");
+}
+function kinderAktiv() { return (data.kinder || []).length > 0; }
+
+// Felder nur zeigen, wenn ueberhaupt Kinder angelegt sind
+function renderKindFelder() {
+  const optionen = kindOptionen();
+  ["schnellKind", "expKind", "editKind"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const alt = el.value;
+    el.innerHTML = optionen;
+    el.value = [...el.options].some(o => o.value === alt) ? alt : "";
+  });
+  ["schnellKindFeld", "expKindFeld", "editKindFeld"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("hidden", !kinderAktiv());
+  });
+}
+
+function renderKinder() {
+  const box = document.getElementById("kinderListe");
+  if (!box) return;
+  box.innerHTML = (data.kinder || []).length ? "" :
+    '<p class="muted" style="font-size:14px;margin:0 0 4px;padding:10px 16px">Noch niemand angelegt.</p>';
+  (data.kinder || []).forEach(k => {
+    const row = document.createElement("div");
+    row.className = "frow";
+    row.innerHTML =
+      '<span class="fnamewrap"><input type="text" class="finput fname kindname" value="' + escapeAttr(k.name) + '" data-kid="' + k.id + '"></span>' +
+      '<button class="del" data-kinddel="' + k.id + '" aria-label="Entfernen">✕</button>';
+    box.appendChild(row);
+  });
+  box.querySelectorAll(".kindname").forEach(inp => {
+    inp.addEventListener("input", () => {
+      const k = data.kinder.find(x => x.id === inp.dataset.kid);
+      if (k) { k.name = inp.value; save(); renderKindFelder(); }
+    });
+  });
+  box.querySelectorAll("[data-kinddel]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.kinddel;
+      const anzahl = alleAusgaben().filter(e => e.kind === id).length;
+      if (anzahl && !confirm("Diese Person hat " + anzahl + " zugeordnete Ausgaben. Die Zuordnung geht verloren, die Ausgaben bleiben. Fortfahren?")) return;
+      data.kinder = data.kinder.filter(x => x.id !== id);
+      Object.keys(data.months).forEach(mk => data.months[mk].variable.forEach(e => { if (e.kind === id) e.kind = ""; }));
+      render();
+    });
+  });
+  renderKindFelder();
+}
+
+function addKind() {
+  const name = document.getElementById("newKindName").value.trim();
+  if (!name) return;
+  data.kinder.push({ id: uid(), name });
+  document.getElementById("newKindName").value = "";
+  render();
+  document.getElementById("newKindName").focus();
+}
+document.getElementById("addKindBtn").addEventListener("click", addKind);
+document.getElementById("newKindName").addEventListener("keydown", e => { if (e.key === "Enter") addKind(); });
+
+function alleAusgaben() {
+  const raus = [];
+  Object.keys(data.months).forEach(k => data.months[k].variable.forEach(e => raus.push(e)));
+  return raus;
+}
+
+// Reine Rechnung fuer die Auswertung
+function kinderZahlen(key) {
+  const m = data.months[key];
+  const monat = m ? m.variable.filter(e => e.kind) : [];
+  const summe = monat.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const gesamt = m ? variableTotal(m) : 0;
+
+  const jeKind = (data.kinder || []).map(k => ({
+    name: k.name,
+    betrag: monat.filter(e => e.kind === k.id).reduce((s, e) => s + (Number(e.amount) || 0), 0),
+  }));
+  const gemeinsam = monat.filter(e => e.kind === KIND_ALLE).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+  const nachKategorie = {};
+  monat.forEach(e => {
+    const c = e.category || "Sonstiges";
+    nachKategorie[c] = (nachKategorie[c] || 0) + (Number(e.amount) || 0);
+  });
+  const kategorien = Object.keys(nachKategorie)
+    .map(name => ({ name, betrag: nachKategorie[name], farbe: categoryColor(name) }))
+    .sort((a, b) => b.betrag - a.betrag);
+
+  // Schnitt der letzten sechs erfassten Monate, ohne den laufenden
+  const vormonate = recordedKeys().filter(k => k !== key).slice(-6);
+  let schnitt = null;
+  if (vormonate.length) {
+    const s = vormonate.reduce((sum, k) =>
+      sum + data.months[k].variable.filter(e => e.kind).reduce((x, e) => x + (Number(e.amount) || 0), 0), 0);
+    schnitt = s / vormonate.length;
+  }
+
+  const jahr = key.slice(0, 4);
+  const imJahr = Object.keys(data.months).filter(k => k.slice(0, 4) === jahr)
+    .reduce((sum, k) => sum + data.months[k].variable.filter(e => e.kind)
+      .reduce((x, e) => x + (Number(e.amount) || 0), 0), 0);
+
+  return { summe, gesamt, anteil: gesamt > 0 ? summe / gesamt : 0, jeKind, gemeinsam,
+           kategorien, schnitt, monate: vormonate.length, imJahr, jahr, anzahl: monat.length };
+}
+
+function renderKinderAuswertung() {
+  const box = document.getElementById("kinderAuswertung");
+  if (!box) return;
+  const sec = document.getElementById("secKinder");
+  sec.style.display = kinderAktiv() ? "" : "none";
+  if (!kinderAktiv()) return;
+
+  const z = kinderZahlen(data.currentMonth);
+  if (!z.anzahl) {
+    box.innerHTML = '<p class="leer">In diesem Monat ist noch keine Ausgabe den Kindern zugeordnet. ' +
+      'Setz beim Buchen das Feld „Für" – auch beim Tanken, wenn die Fahrt für die Kinder war.</p>';
+    return;
+  }
+  const zeilen = z.jeKind.filter(k => k.betrag > 0)
+    .map(k => '<div class="kzeile"><span class="kname">' + escapeHtml(k.name) + '</span>' +
+              '<span class="kwert num">' + fmt(k.betrag) + "</span></div>").join("");
+  const gem = z.gemeinsam > 0
+    ? '<div class="kzeile"><span class="kname">gemeinsam</span><span class="kwert num">' + fmt(z.gemeinsam) + "</span></div>"
+    : "";
+  const kats = z.kategorien.slice(0, 5).map(c =>
+    '<div class="kzeile"><span class="adot" style="background:' + c.farbe + '"></span>' +
+    '<span class="kname" style="font-weight:400">' + escapeHtml(c.name) + '</span>' +
+    '<span class="kwert num">' + fmt(c.betrag) + "</span></div>").join("");
+
+  let vergleich = "";
+  if (z.schnitt !== null) {
+    const diff = z.summe - z.schnitt;
+    const proz = z.schnitt > 0 ? Math.round((diff / z.schnitt) * 100) : null;
+    vergleich = "Schnitt der letzten " + z.monate + (z.monate === 1 ? " Monat" : " Monate") + ": " + fmt(z.schnitt) +
+      (proz !== null && Math.abs(proz) >= 5
+        ? " – dieser Monat liegt " + Math.abs(proz) + " % " + (diff > 0 ? "darüber" : "darunter") + "."
+        : ".");
+  } else {
+    vergleich = "Ein Vergleichswert entsteht, sobald ein Monat abgeschlossen ist.";
+  }
+
+  box.innerHTML =
+    '<div class="kzeile"><span class="kname">Diesen Monat für die Kinder</span>' +
+      '<span class="kwert num" style="font-size:18px">' + fmt(z.summe) + "</span>" +
+      '<span class="kmeta">' + Math.round(z.anteil * 100) + " % deiner variablen Ausgaben</span></div>" +
+    zeilen + gem +
+    (kats ? '<p class="fixnote" style="background:none;padding:12px 0 4px;margin:0">Wofür:</p>' + kats : "") +
+    '<p class="fchint">' + vergleich + " Im Jahr " + z.jahr + " bisher <b>" + fmt(z.imJahr) + "</b>.</p>";
+}
+
 // --- Geplante Einmalausgaben (TUEV, Urlaub, Reparatur) ---
 function geplantOffen(abISO, bisISO) {
   return (data.geplant || []).filter(g => !g.erledigt && g.date && g.date >= abISO && g.date <= bisISO);
@@ -2361,7 +2567,18 @@ function parseSchnell(text) {
     if (treffer) { kategorie = treffer.name; iKat = i; }
   });
 
-  const zweck = rest.filter((_, i) => i !== iKat)
+  // Steht ein Kindername in der Zeile?
+  let kind = "", iKind = -1;
+  rest.forEach((w, i) => {
+    if (kind || i === iKat) return;
+    const wl = w.toLowerCase().replace(/[^a-zäöüß]/g, "");
+    if (wl.length < 3) return;
+    if (/^(beide|alle)$/.test(wl) && (data.kinder || []).length > 1) { kind = KIND_ALLE; iKind = i; return; }
+    const treffer = (data.kinder || []).find(k => k.name.toLowerCase() === wl);
+    if (treffer) { kind = treffer.id; iKind = i; }
+  });
+
+  const zweck = rest.filter((_, i) => i !== iKat && i !== iKind)
     .filter(w => !/^(€|eur|euro)$/i.test(w))          // reine Waehrungsangaben gehoeren nicht in den Zweck
     .join(" ").trim();
   let kategorieErkannt = !!kategorie;                 // stand die Kategorie im Text?
@@ -2370,7 +2587,7 @@ function parseSchnell(text) {
     if (geraten) { kategorie = geraten; kategorieErkannt = true; }
     else kategorie = data.lastCategory || CATEGORIES[0].name;
   }
-  return { betrag, kategorie, zweck, kategorieErkannt };
+  return { betrag, kategorie, zweck, kategorieErkannt, kind };
 }
 
 function resetSchnell() {
@@ -2378,6 +2595,8 @@ function resetSchnell() {
   if (d) d.value = todayISO();
   const k = document.getElementById("schnellKat");
   if (k) k.value = data.lastCategory || CATEGORIES[0].name;
+  const kd = document.getElementById("schnellKind");
+  if (kd) kd.value = "";
   katManuell = false;
 }
 
@@ -2387,6 +2606,8 @@ function zeigeSchnellVorschau() {
   const kat = document.getElementById("schnellKat");
   const g = parseSchnell(feld.value);
   if (g && !katManuell && g.kategorieErkannt) kat.value = g.kategorie;   // nur wenn wirklich erkannt
+  const kindFeld = document.getElementById("schnellKind");
+  if (g && g.kind && kindFeld && [...kindFeld.options].some(o => o.value === g.kind)) kindFeld.value = g.kind;
   if (!g) {
     el.textContent = feld.value.trim() ? "Noch kein Betrag erkannt – etwa „12,50 Rewe Lebensmittel“." : "";
     el.className = "schnellvor";
@@ -2394,17 +2615,20 @@ function zeigeSchnellVorschau() {
   }
   const datum = document.getElementById("schnellDate").value || todayISO();
   const wann = datum === todayISO() ? "heute" : fmtDate(datum);
-  el.textContent = "Bucht: " + fmt(g.betrag) + " · " + kat.value + (g.zweck ? " · " + g.zweck : "") + " · " + wann;
+  const fuer = kindFeld && kindFeld.value ? " · für " + kindName(kindFeld.value) : "";
+  el.textContent = "Bucht: " + fmt(g.betrag) + " · " + kat.value + (g.zweck ? " · " + g.zweck : "") + fuer + " · " + wann;
   el.className = "schnellvor gut";
 }
 
 function schnellBuchen() {
   const feld = document.getElementById("schnellInput");
+  zeigeSchnellVorschau();          // Auswahlfelder zuerst mit dem Text abgleichen
   const g = parseSchnell(feld.value);
   if (!g) { zeigeSchnellVorschau(); feld.focus(); return; }
   const datum = document.getElementById("schnellDate").value || todayISO();
   const kategorie = document.getElementById("schnellKat").value || g.kategorie;
-  const eintrag = { id: uid(), date: datum, amount: g.betrag, description: g.zweck, category: kategorie };
+  const kind = document.getElementById("schnellKind").value || "";
+  const eintrag = { id: uid(), date: datum, amount: g.betrag, description: g.zweck, category: kategorie, kind };
   if (pendingReceipt && pendingReceipt.thumb) eintrag.receipt = pendingReceipt.thumb;   // Beleg vom Scan
   ensureMonth(datum.slice(0, 7));
   data.months[datum.slice(0, 7)].variable.push(eintrag);
@@ -2849,6 +3073,8 @@ function resetExpenseForm() {
   document.getElementById("expCat").value = data.lastCategory || CATEGORIES[0].name;
   document.getElementById("expAmount").value = "";
   document.getElementById("expDesc").value = "";
+  const ek = document.getElementById("expKind");
+  if (ek) ek.value = "";
   pendingReceipt = null;
   hideReceiptPreview();
   setScanStatus("");
