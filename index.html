@@ -3476,6 +3476,11 @@ document.getElementById("balDate").addEventListener("change", e => {
   data.balanceDate = e.target.value || todayISO();
   pruefeKassensturz(); renderVorschau(); save();
 });
+// Sicherungsnetz: Gespeichert wird nach jeder Eingabe. Falls doch einmal ein Weg
+// dazwischenrutscht, sichert dieser Griff spaetestens beim Wegschalten der App.
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") save(); });
+window.addEventListener("pagehide", save);
+
 document.getElementById("speicherBackup").addEventListener("click", exportBackup);
 document.getElementById("speicherBelege").addEventListener("click", belegeEntfernen);
 document.getElementById("icsBtn").addEventListener("click", exportICS);
