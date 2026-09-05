@@ -69,6 +69,14 @@ input[type=number]{-moz-appearance:textfield}
 .speicherwarn-text{margin:0;font-size:14px;line-height:1.55;color:#991b1b}
 .speicherwarn-text b{font-weight:600}
 .speicherwarn-btn{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.startinfo{margin:0 0 16px;font-size:13px;line-height:1.5;color:var(--slate500);background:#fff;border-radius:12px;padding:10px 14px;box-shadow:0 0 0 1px var(--slate200)}
+.startinfo.hidden{display:none}
+.startinfo.warn{background:#fffbeb;color:#92400e;box-shadow:0 0 0 1px #fde68a}
+.startinfo b{font-weight:600}
+.diagnose{font-size:13px;line-height:1.6;color:var(--slate500)}
+.diagnose div{padding:3px 0;border-bottom:1px solid var(--slate100)}
+.diagnose div:last-child{border-bottom:none}
+.diagnose b{color:var(--ink);font-weight:600}
 .tabs{display:flex;gap:6px;background:#fff;padding:5px;border-radius:12px;box-shadow:0 0 0 1px var(--slate200);margin-bottom:24px}
 .tab{flex:1;border:none;background:transparent;border-radius:8px;padding:9px 12px;font-size:14px;font-weight:600;color:var(--slate500);transition:background .15s,color .15s}
 .tab.active{background:var(--ink);color:#fff}
@@ -437,6 +445,8 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
     </div>
   </div>
 
+  <p id="startInfo" class="startinfo hidden"></p>
+
   <div class="tabs">
     <button id="tabBtnHeute" class="tab active">Heute</button>
     <button id="tabBtnMonat" class="tab">Monat</button>
@@ -773,6 +783,19 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
         <p class="backup-note">Sichert alle Monate als Datei. Praktisch, falls dein Browser den lokalen Speicher leert – die Datei kannst du jederzeit wieder einlesen.</p>
       </div>
     </section>
+
+    <section class="section">
+      <div class="section-head"><span class="dot dot--stat"></span><h2 class="section-title">Speicher-Diagnose</h2></div>
+      <div class="panel panel-pad">
+        <div id="diagnoseText" class="diagnose"></div>
+        <div class="btnrow" style="margin-top:14px">
+          <button id="diagnoseTest" class="btn-dark" type="button">Testmarke setzen</button>
+          <button id="diagnoseZweit" class="btn-outline" type="button">Zweitsicherung laden</button>
+        </div>
+        <p id="diagnoseStatus" class="backup-status"></p>
+        <p class="backup-note"><b>So findest du heraus, ob dein Gerät die Daten behält:</b> Testmarke setzen, die App vollständig schließen, wieder öffnen und hier nachsehen. Steht dort „Testmarke hat den Neustart überstanden“, speichert das Gerät – dann liegt es an etwas anderem. Steht dort „verloren“, löscht dein iPhone die Daten der Seite.</p>
+      </div>
+    </section>
   </div>
 
   <p class="note num">Alle Angaben werden fortlaufend pro Monat lokal in diesem Browser gespeichert. &nbsp;·&nbsp; <a href="anleitung.html" style="color:inherit">Anleitung</a></p>
@@ -800,6 +823,11 @@ thead th:first-child{padding-left:16px} thead th:last-child{padding-right:16px}
 "use strict";
 
 const STORAGE_KEY = "monatsfinanzen_v2";
+const TEST_KEY = "monatsfinanzen_testmarke";
+const APP_VERSION = "5. September 2026";
+/* Was beim Start tatsaechlich vorgefunden wurde. Nur so laesst sich spaeter
+   unterscheiden, ob der Speicher geleert wurde oder ob nie geschrieben wurde. */
+let startBefund = { roh: false, zeichen: 0, fehler: "", zeit: 0, testmarke: null };
 /* Die App startet leer. Einkommen und Fixposten traegt jeder selbst ein;
    die Angaben liegen ausschliesslich im localStorage des Browsers und
    gelangen niemals in dieses Repository. */
@@ -842,6 +870,15 @@ function shiftMonth(key, delta) { const [y, m] = key.split("-").map(Number); ret
 function monthLabel(key) { const [y, m] = key.split("-").map(Number); return new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1)); }
 function monthShort(key) { const [y, m] = key.split("-").map(Number); return new Intl.DateTimeFormat("de-DE", { month: "short" }).format(new Date(y, m - 1, 1)).replace(".", "") + " " + String(y).slice(2); }
 
+/* Zustand des Speichers. Bewusst vor dem ersten moeglichen save() deklariert:
+   let-Variablen sind vorher in der zeitlichen Totzone und wuerfen dort. */
+let speicherFehler = null;          // null = alles gut, sonst "voll" oder "gesperrt"
+let zweitSchreibZeit = 0;           // wann die Zweitsicherung zuletzt geschrieben wurde
+let zweitFehler = "";
+let zweitTimer = null;
+let zweitBereit = false;            // erst nach der Startpruefung darf die Zweitsicherung ueberschrieben werden
+let zweitBefund = { geprueft: false, vorhanden: false, zeit: 0, buchungen: 0, geholt: false, neuer: false };
+
 const speicherOk = speicherPruefen();
 let data = load();
 normalisiereStamm(data);
@@ -854,8 +891,14 @@ let evalYear = +data.currentMonth.slice(0, 4);
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) { const d = JSON.parse(raw); if (d && d.months) return normalisiereMonate(d); }
-  } catch (e) {}
+    startBefund.roh = !!raw;
+    startBefund.zeichen = raw ? raw.length : 0;
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d && d.gespeichertAm) startBefund.zeit = d.gespeichertAm;
+      if (d && d.months) return normalisiereMonate(d);
+    }
+  } catch (e) { startBefund.fehler = String((e && e.name) || e); }
   const currentMonth = monthKey(new Date());
   const months = {};
   try {
@@ -890,20 +933,115 @@ function ensureMonth(key) {
   return data.months[key];
 }
 
-let speicherFehler = null;          // null = alles gut, sonst "voll" oder "gesperrt"
-
 function save() {
+  data.gespeichertAm = Date.now();
+  let ok;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     if (speicherFehler) { speicherFehler = null; zeigeSpeicherWarnung(); }
-    return true;
+    ok = true;
   } catch (e) {
     // QuotaExceededError heisst je nach Browser anders, deshalb ueber den Namen und den Code
     const voll = e && (e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED" || e.code === 22);
     speicherFehler = voll ? "voll" : "gesperrt";
     zeigeSpeicherWarnung();
-    return false;
+    ok = false;
   }
+  zweitspeicherMerken();   // zweiter, unabhaengiger Ablageort - auch wenn oben etwas schiefging
+  return ok;
+}
+
+/* ---------------------------------------------------------------
+   Zweitsicherung in der IndexedDB.
+   Der localStorage ist auf dem iPhone das erste, was geleert wird.
+   Dieselben Daten liegen deshalb ein zweites Mal in der IndexedDB;
+   fehlt der localStorage beim Start, wird von dort zurueckgeholt.
+   Geschrieben wird verzoegert, damit Tippen nicht ausgebremst wird.
+   --------------------------------------------------------------- */
+const IDB_NAME = "monatsfinanzen";
+const IDB_STORE = "sicherung";
+function idbOeffnen() {
+  return new Promise((res, rej) => {
+    if (!window.indexedDB) { rej(new Error("nicht verfuegbar")); return; }
+    let r;
+    try { r = indexedDB.open(IDB_NAME, 1); } catch (e) { rej(e); return; }
+    r.onupgradeneeded = () => { const db = r.result; if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error || new Error("Zugriff verweigert"));
+    r.onblocked = () => rej(new Error("blockiert"));
+  });
+}
+
+function zweitspeicherSchreiben() {
+  const stand = JSON.parse(JSON.stringify(data));
+  return idbOeffnen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).put({ stand: stand, zeit: Date.now() }, "stand");
+    tx.oncomplete = () => { db.close(); zweitSchreibZeit = Date.now(); zweitFehler = ""; res(true); };
+    tx.onerror = () => { db.close(); rej(tx.error || new Error("Schreibfehler")); };
+  })).catch(e => { zweitFehler = String((e && e.message) || e); return false; });
+}
+
+function zweitspeicherMerken(sofort) {
+  // Vor der Startpruefung nichts schreiben: sonst ueberschreibt der leere
+  // Startzustand genau die Sicherung, die gleich zurueckgeholt werden soll.
+  if (!zweitBereit) return;
+  if (zweitTimer) { clearTimeout(zweitTimer); zweitTimer = null; }
+  // Beim Tippen nicht bei jedem Zeichen schreiben, sonst aber sofort:
+  // wird die App weggewischt, zaehlt nur, was schon auf der Platte liegt.
+  if (sofort || Date.now() - zweitSchreibZeit > 1500) { zweitspeicherSchreiben(); return; }
+  zweitTimer = setTimeout(() => { zweitTimer = null; zweitspeicherSchreiben(); }, 600);
+}
+
+function zweitspeicherLesen() {
+  return idbOeffnen().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, "readonly");
+    const a = tx.objectStore(IDB_STORE).get("stand");
+    a.onsuccess = () => { db.close(); res(a.result || null); };
+    a.onerror = () => { db.close(); rej(a.error || new Error("Lesefehler")); };
+  })).catch(e => { zweitFehler = String((e && e.message) || e); return null; });
+}
+
+function buchungenZaehlen(d) {
+  let n = 0;
+  Object.keys((d && d.months) || {}).forEach(k => { n += ((d.months[k] || {}).variable || []).length; });
+  return n;
+}
+
+// Beim Start: fehlt der localStorage-Stand, aber die Zweitsicherung ist da, wird sie geladen.
+function zweitspeicherPruefen() {
+  const fertig = () => {
+    zweitBefund.geprueft = true;
+    zweitBereit = true;              // ab jetzt darf mitgeschrieben werden
+    renderStartInfo();
+    renderDiagnose();
+    zweitspeicherMerken(true);
+  };
+  return zweitspeicherLesen().then(eintrag => {
+    if (!eintrag || !eintrag.stand || !eintrag.stand.months) { fertig(); return; }
+    zweitBefund.vorhanden = true;
+    zweitBefund.zeit = eintrag.zeit || 0;
+    zweitBefund.buchungen = buchungenZaehlen(eintrag.stand);
+    const eigene = buchungenZaehlen(data);
+    // Der localStorage schreibt verzoegert auf die Platte. Wird die App weggewischt,
+    // fehlt dort der letzte Stand ganz oder teilweise. Die Zweitsicherung ist
+    // dann die juengere Fassung - und wird uebernommen.
+    // Verglichen wird mit dem Zeitstempel, der beim Start im localStorage lag -
+    // nicht mit data.gespeichertAm, das der erste save() dieser Sitzung schon erneuert hat.
+    zweitBefund.neuer = (eintrag.stand.gespeichertAm || 0) > (startBefund.zeit || 0) + 500;
+    if ((!startBefund.roh && zweitBefund.buchungen >= eigene) || zweitBefund.neuer) {
+      // Stand aus der Zweitsicherung zurueckholen
+      data = normalisiereMonate(eintrag.stand);
+      normalisiereStamm(data);
+      if (!data.activeTab) data.activeTab = "heute";
+      if (!data.lastCategory) data.lastCategory = CATEGORIES[0].name;
+      ensureMonth(data.currentMonth);
+      zweitBefund.geholt = true;
+      initFields();
+      render();
+    }
+    fertig();
+  }).catch(() => fertig());
 }
 
 // Wie viel Platz belegen die Daten, und wie viel davon sind Belege?
@@ -925,6 +1063,7 @@ function belegAnzahl() {
 }
 function alsGroesse(zeichen) {
   const kb = zeichen / 1024;
+  if (kb < 1) return "unter 1 KB";
   return kb < 900 ? Math.round(kb) + " KB" : (kb / 1024).toFixed(1).replace(".", ",") + " MB";
 }
 
@@ -947,6 +1086,7 @@ function zeigeSpeicherWarnung() {
 // Beim Start pruefen, ob der Speicher ueberhaupt funktioniert
 function speicherPruefen() {
   try {
+    startBefund.testmarke = localStorage.getItem(TEST_KEY);
     localStorage.setItem("monatsfinanzen_probe", "1");
     localStorage.removeItem("monatsfinanzen_probe");
     return true;
@@ -1070,6 +1210,7 @@ function render() {
   renderGeplant();
   renderStats();
   renderEval();
+  renderStartInfo();
   applyTab(data.activeTab);
   save();
   zeigeSpeicherWarnung();
@@ -1301,7 +1442,7 @@ function renderBudget(vari) {
 }
 
 // --- Auswertung ---
-function renderEval() { renderAvailable(); renderCategory(); renderAuffaellig(); renderKinderAuswertung(); renderKm(); renderSpeicher(); renderRuecklagen(); renderAverages(); renderEvalTable(); renderYear(); }
+function renderEval() { renderAvailable(); renderCategory(); renderAuffaellig(); renderKinderAuswertung(); renderKm(); renderSpeicher(); renderDiagnose(); renderRuecklagen(); renderAverages(); renderEvalTable(); renderYear(); }
 
 function renderAvailable() {
   const m = cur();
@@ -2777,6 +2918,131 @@ function renderSpeicher() {
     ". Browser geben einer Seite meist rund 5 MB – Belegfotos füllen das am schnellsten.";
 }
 
+/* --------- Startzeile und Speicher-Diagnose ---------
+   Sie beantworten die einzige Frage, die sich aus der Ferne nicht raten laesst:
+   behaelt dieses Geraet die Daten oder nicht. */
+
+function zeitpunktText(ms) {          // heisst bewusst nicht zeitText - das gibt es fuer Arbeitszeit schon
+  if (!ms) return "unbekannt";
+  const d = new Date(ms);
+  return dateFmt.format(d) + ", " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + " Uhr";
+}
+
+function alsAppGestartet() {
+  if (window.navigator.standalone === true) return true;
+  try { return !!(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches); } catch (e) { return false; }
+}
+
+function renderStartInfo() {
+  const el = document.getElementById("startInfo");
+  if (!el) return;
+  const monate = Object.keys(data.months || {}).length;
+  const buchungen = buchungenZaehlen(data);
+  if (zweitBefund.geholt) {
+    el.className = "startinfo warn";
+    el.innerHTML = "<b>Aus der Zweitsicherung wiederhergestellt.</b> Der normale Speicher war " +
+      (startBefund.roh ? "nicht mehr auf dem neuesten Stand" : "leer") + ", die Zweitsicherung vom " +
+      zeitpunktText(zweitBefund.zeit) + " hatte deine Eingaben noch. Es fehlt nichts.";
+    return;
+  }
+  if (startBefund.roh) {
+    el.className = "startinfo";
+    el.innerHTML = "Gespeicherter Stand geladen: <b>" + monate + (monate === 1 ? " Monat" : " Monate") + "</b>, " +
+      buchungen + (buchungen === 1 ? " Buchung" : " Buchungen") +
+      (startBefund.zeit ? ", zuletzt gesichert am " + zeitpunktText(startBefund.zeit) : "") + ".";
+    return;
+  }
+  el.className = "startinfo warn";
+  el.innerHTML = "<b>Beim Start war nichts gespeichert.</b> Beim allerersten Öffnen ist das richtig so. Passiert es, obwohl du vorher etwas eingetragen hattest, sieh unter <b>Statistik → Speicher-Diagnose</b> nach – dort steht, woran es liegt.";
+}
+
+function setDiagnoseStatus(msg, err) {
+  const el = document.getElementById("diagnoseStatus");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.className = "backup-status " + (err ? "neg" : "pos");
+}
+
+function renderDiagnose() {
+  const el = document.getElementById("diagnoseText");
+  if (!el) return;
+  const g = speicherGroesse();
+  const zeilen = [];
+  const z = (name, wert) => zeilen.push("<div>" + name + ": <b>" + wert + "</b></div>");
+
+  z("Fassung", APP_VERSION);
+  z("Geöffnet", alsAppGestartet() ? "als App vom Home-Bildschirm" : "im Browser (Safari-Tab)");
+  z("Adresse", location.origin.replace(/^https?:\/\//, "") + location.pathname);
+  z("Speicher erreichbar", speicherOk ? "ja" : "nein – dieser Browser lässt nichts schreiben");
+
+  if (startBefund.roh) {
+    z("Beim Start vorgefunden", "ja, " + alsGroesse(startBefund.zeichen) +
+      (startBefund.zeit ? " vom " + zeitpunktText(startBefund.zeit) : ""));
+  } else {
+    z("Beim Start vorgefunden", "nein" + (startBefund.fehler ? " (" + startBefund.fehler + ")" : ""));
+  }
+
+  if (startBefund.testmarke) {
+    const t = Date.parse(startBefund.testmarke);
+    z("Testmarke", "hat den Neustart überstanden (gesetzt " + zeitpunktText(isNaN(t) ? 0 : t) + ")");
+  } else {
+    z("Testmarke", "keine vorhanden – noch keine gesetzt oder beim Schließen verloren");
+  }
+
+  z("Jetzt im Speicher", alsGroesse(g.gesamt) + " · " + Object.keys(data.months || {}).length + " Monate · " +
+    buchungenZaehlen(data) + " Buchungen" + (g.anzahlBelege ? " · " + g.anzahlBelege + " Belegfotos" : ""));
+  z("Zuletzt gesichert", zeitpunktText(data.gespeichertAm));
+
+  if (!zweitBefund.geprueft) z("Zweitsicherung", "wird geprüft …");
+  else if (zweitBefund.vorhanden) z("Zweitsicherung", "vorhanden, " + zweitBefund.buchungen +
+    (zweitBefund.buchungen === 1 ? " Buchung" : " Buchungen") + " vom " + zeitpunktText(zweitBefund.zeit) +
+    (zweitBefund.geholt ? " – beim Start zurückgeholt" : ""));
+  else z("Zweitsicherung", "noch keine" + (zweitFehler ? " (" + zweitFehler + ")" : ""));
+
+  if (speicherFehler) z("Fehler", speicherFehler === "voll" ? "Speicher ist voll" : "Speicher ist gesperrt");
+  el.innerHTML = zeilen.join("");
+}
+
+function testmarkeSetzen() {
+  const jetzt = new Date().toISOString();
+  try {
+    localStorage.setItem(TEST_KEY, jetzt);
+    if (localStorage.getItem(TEST_KEY) !== jetzt) {
+      setDiagnoseStatus("Geschrieben – aber beim Zurücklesen kam etwas anderes an. Der Speicher arbeitet nicht zuverlässig.", true);
+      return;
+    }
+    save();
+    setDiagnoseStatus("Testmarke gesetzt. Schließe die App jetzt vollständig, öffne sie wieder und sieh hier nach der Zeile „Testmarke“.");
+  } catch (e) {
+    setDiagnoseStatus("Schreiben nicht möglich (" + ((e && e.name) || e) + "). Dieser Browser speichert nichts.", true);
+  }
+  renderDiagnose();
+}
+
+function zweitsicherungLaden() {
+  setDiagnoseStatus("Zweitsicherung wird gelesen …");
+  zweitspeicherLesen().then(eintrag => {
+    if (!eintrag || !eintrag.stand || !eintrag.stand.months) {
+      setDiagnoseStatus("Keine Zweitsicherung gefunden" + (zweitFehler ? " (" + zweitFehler + ")" : "") + ".", true);
+      return;
+    }
+    const n = buchungenZaehlen(eintrag.stand);
+    if (!confirm("Zweitsicherung vom " + zeitpunktText(eintrag.zeit) + " mit " + n +
+                 (n === 1 ? " Buchung" : " Buchungen") + " laden? Der aktuelle Stand wird dadurch ersetzt.")) {
+      setDiagnoseStatus("");
+      return;
+    }
+    data = normalisiereMonate(eintrag.stand);
+    normalisiereStamm(data);
+    if (!data.activeTab) data.activeTab = "eval";
+    if (!data.lastCategory) data.lastCategory = CATEGORIES[0].name;
+    ensureMonth(data.currentMonth);
+    initFields();
+    render();
+    setDiagnoseStatus("Zweitsicherung geladen.");
+  });
+}
+
 function renderKm() {
   const box = document.getElementById("kmAuswertung");
   if (!box) return;
@@ -3478,8 +3744,12 @@ document.getElementById("balDate").addEventListener("change", e => {
 });
 // Sicherungsnetz: Gespeichert wird nach jeder Eingabe. Falls doch einmal ein Weg
 // dazwischenrutscht, sichert dieser Griff spaetestens beim Wegschalten der App.
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") save(); });
-window.addEventListener("pagehide", save);
+function sofortSichern() { save(); zweitspeicherMerken(true); }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") sofortSichern(); });
+window.addEventListener("pagehide", sofortSichern);
+window.addEventListener("beforeunload", sofortSichern);
+document.getElementById("diagnoseTest").addEventListener("click", testmarkeSetzen);
+document.getElementById("diagnoseZweit").addEventListener("click", zweitsicherungLaden);
 
 document.getElementById("speicherBackup").addEventListener("click", exportBackup);
 document.getElementById("speicherBelege").addEventListener("click", belegeEntfernen);
@@ -3629,6 +3899,7 @@ document.getElementById("schnellKat").innerHTML = catOptions;
 resetSchnell();
 render();
 resetExpenseForm();
+zweitspeicherPruefen();
 </script>
 </body>
 </html>

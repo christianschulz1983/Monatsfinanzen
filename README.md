@@ -41,6 +41,13 @@ Kein Server, kein Konto, keine Installation.
   Schwarzweiß) und gibt Tesseract die Seitenstruktur vor
 - Warnung, wenn der Browser nicht speichern kann (Speicher voll oder gesperrt), mit
   Speicheranzeige und der Möglichkeit, Belegfotos zu entfernen
+- Zweitsicherung in der IndexedDB: jede Änderung wird zusätzlich dort abgelegt, weil der
+  localStorage verzögert auf die Platte schreibt und beim harten Beenden der App den letzten
+  Stand verlieren kann. Beim Start gewinnt der jüngere der beiden Stände
+- Startzeile über den Reitern: was geladen wurde (Monate, Buchungen, Zeitpunkt) – oder dass
+  aus der Zweitsicherung zurückgeholt wurde
+- Speicher-Diagnose in der Statistik: Fassung, Home-Bildschirm oder Browser, Speicherzustand,
+  Befund beim Start, Zweitsicherung. Mit Testmarke, die einen Neustart überleben muss
 - Kontoauszug als Ausgaben-Import: Kartenzahlungen und Lastschriften mit Datum, Betrag und
   geratener Kategorie; bereits erfasste Buchungen und Fixposten werden gekennzeichnet
 - Händler-Gedächtnis: eine korrigierte Kategorie gilt beim nächsten Mal automatisch
